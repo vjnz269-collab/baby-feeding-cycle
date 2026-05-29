@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Baby Foodie" />
+  <meta name="theme-color" content="#ff8fab" />
+  <title>🍼 Baby Foodie Tracker</title>
+
+  <!-- Firebase SDK (v9 compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+  <style>
+    /* ── Reset & Base ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink:       #ff8fab;
+      --pink-dark:  #e0607e;
+      --pink-light: #ffd6e7;
+      --peach:      #fff0f5;
+      --mint:       #d4f1e4;
+      --mint-dark:  #3aaa6f;
+      --blue:       #dbeafe;
+      --blue-dark:  #2563eb;
+      --text:       #4a3040;
+      --subtext:    #9e7d8f;
+      --white:      #ffffff;
+      --shadow:     rgba(255, 143, 171, 0.25);
+      --radius:     16px;
+      --radius-sm:  10px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--peach);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* ── Header ───────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, var(--pink) 0%, #ffb3c6 100%);
+      color: var(--white);
+      padding: 20px 16px 14px;
+      padding-top: calc(20px + env(safe-area-inset-top));
+      text-align: center;
+      box-shadow: 0 4px 16px var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.3px; }
+    header p.subtitle { font-size: 0.78rem; opacity: 0.88; margin-top: 2px; }
+
+    /* ── Role Badge ───────────────────────────────── */
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 8px;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      border: none;
+    }
+
+    .role-badge:active { opacity: 0.75; }
+
+    .role-badge.editor {
+      background: #fff3;
+      color: var(--white);
+      border: 1.5px solid #fff6;
+    }
+
+    .role-badge.viewer {
+      background: #fff3;
+      color: var(--white);
+      border: 1.5px solid #fff6;
+    }
+
+    /* ── Live Indicator ───────────────────────────── */
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      display: inline-block;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    /* ── Date Navigator ───────────────────────────── */
+    .date-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: var(--white);
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--pink-light);
+      position: sticky;
+      top: 100px;
+      z-index: 99;
+    }
+
+    .date-nav button {
+      background: var(--pink-light);
+      border: none;
+      border-radius: 50%;
+      width: 36px; height: 36px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: var(--pink-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .date-nav button:active { transform: scale(0.92); }
+    .date-nav button:hover  { background: var(--pink); color: var(--white); }
+    .date-nav button:disabled { opacity: 0.35; cursor: default; }
+
+    #dateDisplay {
+      font-size: 1rem; font-weight: 700;
+      color: var(--text); flex: 1;
+      text-align: center; line-height: 1.2;
+    }
+
+    #dateDisplay span {
+      display: block; font-size: 0.7rem;
+      font-weight: 500; color: var(--subtext);
+    }
+
+    /* ── Main Content ─────────────────────────────── */
+    main {
+      flex: 1; padding: 16px;
+      max-width: 640px; width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── Viewer Banner ────────────────────────────── */
+    .viewer-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--blue);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-size: 0.82rem;
+      color: var(--blue-dark);
+      font-weight: 600;
+    }
+
+    .viewer-banner.hidden { display: none; }
+
+    /* ── Summary Bar ──────────────────────────────── */
+    .summary-bar {
+      display: flex; gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .summary-card {
+      flex: 1; background: var(--white);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px; text-align: center;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+
+    .summary-card .num {
+      font-size: 1.6rem; font-weight: 800;
+      color: var(--pink-dark); line-height: 1;
+    }
+
+    .summary-card .lbl {
+      font-size: 0.68rem; color: var(--subtext);
+      margin-top: 2px; text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* ── Table ────────────────────────────────────── */
+    .table-wrapper {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px var(--shadow);
+      overflow: hidden; margin-bottom: 20px;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead tr {
+      background: linear-gradient(90deg, var(--pink) 0%, #ffb3c6 100%);
+    }
+
+    thead th {
+      color: var(--white); font-size: 0.75rem;
+      font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; padding: 11px 8px;
+      text-align: left;
+    }
+
+    thead th:first-child { padding-left: 14px; }
+    thead th:last-child  { text-align: center; width: 44px; }
+
+    tbody tr {
+      border-bottom: 1px solid #fce4ec;
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover      { background: #fff5f8; }
+    tbody tr.just-added { animation: rowPop 0.35s ease; }
+
+    @keyframes rowPop {
+      0%   { opacity: 0; transform: translateY(-6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    td { padding: 6px 6px; vertical-align: middle; }
+    td:first-child { padding-left: 14px; }
+
+    /* Editable inputs */
+    td input[type="time"],
+    td input[type="text"] {
+      width: 100%; border: 1.5px solid transparent;
+      border-radius: 8px; padding: 7px 8px;
+      font-size: 0.88rem; font-family: inherit;
+      color: var(--text); background: transparent;
+      transition: border-color 0.2s, background 0.2s;
+      outline: none;
+    }
+
+    td input[type="time"]:focus,
+    td input[type="text"]:focus {
+      border-color: var(--pink); background: var(--peach);
+    }
+
+    td input[type="time"] { max-width: 110px; font-weight: 600; }
+
+    /* Read-only viewer cells */
+    .cell-readonly {
+      padding: 8px 8px; font-size: 0.88rem;
+      color: var(--text);
+    }
+
+    .cell-readonly.time-cell {
+      font-weight: 700; color: var(--pink-dark);
+      white-space: nowrap;
+    }
+
+    /* Food emoji */
+    .food-wrap { display: flex; align-items: center; gap: 4px; }
+    .food-emoji { font-size: 1rem; flex-shrink: 0; }
+
+    /* ── Empty State ──────────────────────────────── */
+    #emptyState { padding: 36px 16px; text-align: center; color: var(--subtext); }
+    #emptyState .big-emoji { font-size: 3rem; margin-bottom: 8px; }
+    #emptyState p { font-size: 0.88rem; line-height: 1.5; }
+
+    /* ── Delete Button ────────────────────────────── */
+    .btn-del {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.1rem; width: 36px; height: 36px;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      margin: auto; transition: background 0.2s, transform 0.1s;
+      color: #e57373;
+    }
+    .btn-del:hover  { background: #fce4ec; }
+    .btn-del:active { transform: scale(0.88); }
+
+    /* ── Add / Clear Buttons ──────────────────────── */
+    .btn-add {
+      width: 100%; padding: 15px; border: none;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--pink) 0%, #ffb3c6 100%);
+      color: var(--white); font-size: 1rem; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.2px;
+      box-shadow: 0 4px 14px var(--shadow);
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex; align-items: center;
+      justify-content: center; gap: 8px;
+    }
+
+    .btn-add:active { transform: scale(0.97); box-shadow: 0 2px 8px var(--shadow); }
+    .btn-add:hover  { background: linear-gradient(135deg, var(--pink-dark) 0%, var(--pink) 100%); }
+
+    .btn-clear {
+      width: 100%; margin-top: 10px; padding: 12px;
+      border: 2px solid #fce4ec; border-radius: var(--radius);
+      background: var(--white); color: var(--subtext);
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      display: flex; align-items: center;
+      justify-content: center; gap: 6px;
+    }
+
+    .btn-clear:hover { border-color: #e57373; color: #e57373; }
+
+    /* Hidden utility */
+    .hidden { display: none !important; }
+
+    /* ── Notes Section ────────────────────────────── */
+    .notes-section {
+      margin-top: 20px; background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px var(--shadow); overflow: hidden;
+    }
+
+    .notes-section label {
+      display: block; padding: 12px 14px 6px;
+      font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--subtext);
+    }
+
+    .notes-section textarea {
+      width: 100%; border: none;
+      padding: 6px 14px 14px; font-size: 0.9rem;
+      font-family: inherit; color: var(--text);
+      background: transparent; resize: none; outline: none;
+      min-height: 80px;
+    }
+
+    .notes-section .notes-readonly {
+      padding: 6px 14px 14px; font-size: 0.9rem;
+      color: var(--text); white-space: pre-wrap;
+      min-height: 40px; line-height: 1.5;
+    }
+
+    /* ── PIN Modal ────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(74, 48, 64, 0.55);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center;
+      justify-content: center; padding: 24px;
+    }
+
+    .modal-overlay.hidden { display: none; }
+
+    .modal-box {
+      background: var(--white); border-radius: 24px;
+      padding: 32px 28px; width: 100%;
+      max-width: 340px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      animation: modalIn 0.25s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.9) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-box .modal-emoji { font-size: 2.8rem; margin-bottom: 8px; }
+    .modal-box h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+    .modal-box p  { font-size: 0.82rem; color: var(--subtext); margin-bottom: 20px; line-height: 1.5; }
+
+    .modal-box input[type="password"] {
+      width: 100%; padding: 13px 16px;
+      border: 2px solid var(--pink-light);
+      border-radius: 12px; font-size: 1.2rem;
+      text-align: center; letter-spacing: 6px;
+      outline: none; font-family: inherit;
+      color: var(--text); margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .modal-box input[type="password"]:focus { border-color: var(--pink); }
+
+    .modal-box input.error { border-color: #e57373 !important; animation: shake 0.3s ease; }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25%      { transform: translateX(-6px); }
+      75%      { transform: translateX(6px); }
+    }
+
+    .modal-btn-row { display: flex; gap: 10px; }
+
+    .modal-btn-row button {
+      flex: 1; padding: 13px; border: none;
+      border-radius: 12px; font-size: 0.95rem;
+      font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: opacity 0.2s;
+    }
+
+    .modal-btn-row button:active { opacity: 0.8; }
+
+    .btn-confirm {
+      background: linear-gradient(135deg, var(--pink), #ffb3c6);
+      color: var(--white);
+    }
+
+    .btn-cancel {
+      background: var(--peach); color: var(--subtext);
+    }
+
+    .modal-error {
+      font-size: 0.78rem; color: #e57373;
+      margin-top: -8px; margin-bottom: 10px;
+      min-height: 18px;
+    }
+
+    /* ── Connecting overlay ────────────────────────── */
+    #connectingOverlay {
+      position: fixed; inset: 0; z-index: 600;
+      background: var(--peach);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+    }
+
+    #connectingOverlay .big-emoji { font-size: 3rem; }
+    #connectingOverlay p { font-size: 0.95rem; color: var(--subtext); font-weight: 600; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 4px solid var(--pink-light);
+      border-top-color: var(--pink);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: calc(24px + env(safe-area-inset-bottom));
+      left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #333; color: #fff;
+      padding: 10px 20px; border-radius: 100px;
+      font-size: 0.84rem; font-weight: 600;
+      white-space: nowrap; z-index: 999;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── Footer ───────────────────────────────────── */
+    footer {
+      text-align: center; font-size: 0.7rem;
+      color: var(--subtext);
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Connecting Overlay ── -->
+  <div id="connectingOverlay">
+    <div class="big-emoji">🍼</div>
+    <div class="spinner"></div>
+    <p>Connecting…</p>
+  </div>
+
+  <!-- ── PIN Modal ── -->
+  <div class="modal-overlay hidden" id="pinModal">
+    <div class="modal-box">
+      <div class="modal-emoji">🔐</div>
+      <h2>Editor Access</h2>
+      <p>Enter the editor PIN to unlock editing.<br>Viewers don't need a PIN.</p>
+      <input type="password" id="pinInput" maxlength="8" placeholder="••••" autocomplete="off" />
+      <div class="modal-error" id="pinError"></div>
+      <div class="modal-btn-row">
+        <button class="btn-cancel" id="pinCancel">Cancel</button>
+        <button class="btn-confirm" id="pinConfirm">Unlock ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Header ── -->
+  <header>
+    <h1>🍼 Baby Foodie</h1>
+    <p class="subtitle">Daily feeding tracker</p>
+    <button class="role-badge viewer" id="roleBadge" aria-label="Switch role">
+      <span class="live-dot"></span>
+      <span id="roleLabel">Viewer</span>
+    </button>
+  </header>
+
+  <!-- ── Date Navigator ── -->
+  <div class="date-nav">
+    <button id="prevDay" aria-label="Previous day">‹</button>
+    <div id="dateDisplay">
+      <strong id="dateLabel">Today</strong>
+      <span id="dateSubLabel"></span>
+    </div>
+    <button id="nextDay" aria-label="Next day">›</button>
+  </div>
+
+  <!-- ── Main ── -->
+  <main>
+
+    <!-- Viewer Banner -->
+    <div class="viewer-banner hidden" id="viewerBanner">
+      👁 You are in <strong>view-only</strong> mode. Updates appear live automatically.
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-bar">
+      <div class="summary-card">
+        <div class="num" id="mealCount">0</div>
+        <div class="lbl">🍽 Meals</div>
+      </div>
+      <div class="summary-card">
+        <div class="num" id="firstMeal">—</div>
+        <div class="lbl">🌅 First</div>
+      </div>
+      <div class="summary-card">
+        <div class="num" id="lastMeal">—</div>
+        <div class="lbl">🌙 Last</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:115px">⏰ Time</th>
+            <th>🥣 Food / Drink</th>
+            <th id="actionCol"></th>
+          </tr>
+        </thead>
+        <tbody id="feedingBody"></tbody>
+      </table>
+      <div id="emptyState">
+        <div class="big-emoji">🍼</div>
+        <p id="emptyMsg">Loading…</p>
+      </div>
+    </div>
+
+    <!-- Editor-only controls -->
+    <div id="editorControls" class="hidden">
+      <button class="btn-add" id="addRowBtn">
+        <span>＋</span> Add Feeding
+      </button>
+      <button class="btn-clear" id="clearDayBtn">
+        🗑 Clear This Day
+      </button>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-section">
+      <label>📝 Notes for the day</label>
+      <textarea id="notesField" placeholder="Any observations, allergies, reactions…" class="hidden"></textarea>
+      <div class="notes-readonly hidden" id="notesReadonly"></div>
+    </div>
+
+  </main>
+
+  <footer>Made with 💕 for your little one</footer>
+  <div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ██████╗  ██████╗ ███╗   ██╗███████╗██╗ ██████╗
+   ██╔════╝██╔═══██╗████╗  ██║██╔════╝██║██╔════╝
+   ██║     ██║   ██║██╔██╗ ██║█████╗  ██║██║  ███╗
+   ██║     ██║   ██║██║╚██╗██║██╔══╝  ██║██║   ██║
+   ╚██████╗╚██████╔╝██║ ╚████║██║     ██║╚██████╔╝
+    ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝     ╚═╝ ╚═════╝
+
+  🔧 STEP 1: Create a free Firebase project at https://console.firebase.google.com
+  🔧 STEP 2: Enable "Realtime Database" and set rules to public (see bottom of script)
+  🔧 STEP 3: Replace the config object below with YOUR project's config
+  🔧 STEP 4: Change EDITOR_PIN to your own secret PIN
+═══════════════════════════════════════════════════════════════ */
+
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBg9nM_tO5XHnQ0grqJiOL3RqdqUEi5sk0",
+    authDomain: "feeding-baby-9e070.firebaseapp.com",
+    databaseURL: "https://feeding-baby-9e070-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "feeding-baby-9e070",
+    storageBucket: "feeding-baby-9e070.firebasestorage.app",
+    messagingSenderId: "430923431200",
+    appId: "1:430923431200:web:10b57cf89944a7878a2b45"
+  };
+
+  // 🔒 Change this to your own secret PIN
+  const EDITOR_PIN = "1003";
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT FIREBASE
+═══════════════════════════════════════════════════════════════ */
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.database();
+
+  // DB path helper
+  function dbPath(dateStr) {
+    return `babyFoodie/${dateStr}`;
+  }
+
+/* ═══════════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════════ */
+  let currentDate   = todayKey();
+  let isEditor      = sessionStorage.getItem("bfRole") === "editor";
+  let currentRows   = [];
+  let currentNotes  = "";
+  let dbListener    = null;   // active Firebase listener unsubscribe fn
+
+/* ═══════════════════════════════════════════════════════════════
+   DATE HELPERS
+═══════════════════════════════════════════════════════════════ */
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function offsetDate(dateStr, days) {
+    const d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function formatDateLabel(dateStr) {
+    const today     = todayKey();
+    const yesterday = offsetDate(today, -1);
+    const tomorrow  = offsetDate(today,  1);
+    if (dateStr === today)     return "Today";
+    if (dateStr === yesterday) return "Yesterday";
+    if (dateStr === tomorrow)  return "Tomorrow";
+    return new Date(dateStr + "T00:00:00")
+      .toLocaleDateString(undefined, { weekday: "long" });
+  }
+
+  function formatDateSubLabel(dateStr) {
+    return new Date(dateStr + "T00:00:00")
+      .toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+  }
+
+/* ═══════════════════════════════════════════════════════════════
+   FOOD EMOJI
+═══════════════════════════════════════════════════════════════ */
+  const emojiMap = [
+    [/milk|formula|breast|feed/i, "🍼"],
+    [/rice|porridge|cereal|oat/i, "🍚"],
+    [/carrot/i,                   "🥕"],
+    [/pumpkin|squash/i,           "🎃"],
+    [/apple/i,                    "🍎"],
+    [/pear/i,                     "🍐"],
+    [/banana/i,                   "🍌"],
+    [/mango/i,                    "🥭"],
+    [/avocado/i,                  "🥑"],
+    [/potato/i,                   "🥔"],
+    [/broccoli/i,                 "🥦"],
+    [/pea/i,                      "🫛"],
+    [/chicken/i,                  "🍗"],
+    [/beef|meat/i,                "🥩"],
+    [/fish|salmon|cod/i,          "🐟"],
+    [/egg/i,                      "🥚"],
+    [/yogurt|yoghurt/i,           "🥛"],
+    [/cheese/i,                   "🧀"],
+    [/bread|toast/i,              "🍞"],
+    [/pasta|noodle/i,             "🍝"],
+    [/soup/i,                     "🍲"],
+    [/puree|mash/i,               "🥣"],
+    [/water|juice|drink/i,        "💧"],
+    [/fruit/i,                    "🍓"],
+    [/veggie|vegetable/i,         "🥗"],
+    [/snack|puff|biscuit/i,       "🍘"],
+  ];
+
+  function foodEmoji(text) {
+    if (!text) return "🥣";
+    for (const [re, em] of emojiMap) if (re.test(text)) return em;
+    return "🥣";
+  }
+
+/* ═══════════════════════════════════════════════════════════════
+   FIREBASE LISTENERS
+═══════════════════════════════════════════════════════════════ */
+  function subscribeToDate(dateStr) {
+    // Detach any previous listener
+    if (dbListener) {
+      db.ref(dbPath(currentDate.replace(/\-/g,'_') + "_prev")).off();
+    }
+
+    const ref = db.ref(dbPath(dateStr.replace(/-/g, "_")));
+
+    // onValue fires immediately with current data, then on every change
+    ref.on("value", snapshot => {
+      const data = snapshot.val() || {};
+      currentRows  = Array.isArray(data.rows) ? data.rows : [];
+      currentNotes = data.notes || "";
+      render();
+    });
+
+    dbListener = ref;
+  }
+
+  function unsubscribeCurrent() {
+    if (dbListener) {
+      dbListener.off("value");
+      dbListener = null;
+    }
+  }
+
+/* ═══════════════════════════════════════════════════════════════
+   WRITE TO FIREBASE (editor only)
+═══════════════════════════════════════════════════════════════ */
+  function pushData(rows, notes) {
+    const ref = db.ref(dbPath(currentDate.replace(/-/g, "_")));
+    ref.set({ rows, notes });
+  }
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════════════════ */
+  function render(animateLast = false) {
+    updateDateDisplay();
+    updateRoleUI();
+    renderTable(animateLast);
+    renderNotes();
+    updateSummary(currentRows);
+  }
+
+  function renderTable(animateLast = false) {
+    const tbody = document.getElementById("feedingBody");
+    const empty = document.getElementById("emptyState");
+    tbody.innerHTML = "";
+
+    if (currentRows.length === 0) {
+      empty.style.display = "block";
+      document.getElementById("emptyMsg").textContent =
+        "No feedings logged yet." + (isEditor ? " Tap + Add Feeding to get started!" : " Check back soon 😊");
+    } else {
+      empty.style.display = "none";
+      currentRows.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        if (animateLast && i === currentRows.length - 1) tr.classList.add("just-added");
+
+        if (isEditor) {
+          tr.innerHTML = `
+            <td>
+              <input type="time" value="${esc(row.time)}" data-i="${i}" data-field="time"
+                aria-label="Feeding time" />
+            </td>
+            <td>
+              <div class="food-wrap">
+                <span class="food-emoji">${foodEmoji(row.food)}</span>
+                <input type="text" value="${esc(row.food)}" data-i="${i}" data-field="food"
+                  placeholder="e.g. Banana purée…" aria-label="Food description" />
+              </div>
+            </td>
+            <td>
+              <button class="btn-del" data-i="${i}" aria-label="Delete row">🗑</button>
+            </td>`;
+        } else {
+          // Read-only viewer row
+          tr.innerHTML = `
+            <td>
+              <div class="cell-readonly time-cell">${fmt12(row.time) || "—"}</div>
+            </td>
+            <td>
+              <div class="food-wrap">
+                <span class="food-emoji">${foodEmoji(row.food)}</span>
+                <div class="cell-readonly">${esc(row.food) || "<em style='opacity:.5'>—</em>"}</div>
+              </div>
+            </td>
+            <td></td>`;
+        }
+        tbody.appendChild(tr);
+      });
+    }
+  }
+
+  function renderNotes() {
+    const ta = document.getElementById("notesField");
+    const ro = document.getElementById("notesReadonly");
+    if (isEditor) {
+      ta.value = currentNotes;
+      ta.classList.remove("hidden");
+      ro.classList.add("hidden");
+    } else {
+      ro.textContent = currentNotes || "No notes for this day.";
+      ro.classList.remove("hidden");
+      ta.classList.add("hidden");
+    }
+  }
+
+  function updateDateDisplay() {
+    document.getElementById("dateLabel").textContent    = formatDateLabel(currentDate);
+    document.getElementById("dateSubLabel").textContent = formatDateSubLabel(currentDate);
+    const isToday = currentDate === todayKey();
+    const nextBtn = document.getElementById("nextDay");
+    nextBtn.disabled = isToday;
+  }
+
+  function updateRoleUI() {
+    const badge    = document.getElementById("roleBadge");
+    const label    = document.getElementById("roleLabel");
+    const banner   = document.getElementById("viewerBanner");
+    const controls = document.getElementById("editorControls");
+    const actionTh = document.getElementById("actionCol");
+
+    if (isEditor) {
+      badge.classList.replace("viewer", "editor");
+      label.textContent = "Editor ✏️";
+      badge.title = "Click to lock / switch to viewer";
+      banner.classList.add("hidden");
+      controls.classList.remove("hidden");
+      actionTh.style.width = "44px";
+    } else {
+      badge.classList.replace("editor", "viewer");
+      label.textContent = "Viewer";
+      badge.title = "Click to unlock editor mode";
+      banner.classList.remove("hidden");
+      controls.classList.add("hidden");
+      actionTh.style.width = "0";
+    }
+  }
+
+  function updateSummary(rows) {
+    document.getElementById("mealCount").textContent = rows.length;
+    const times = rows.map(r => r.time).filter(Boolean).sort();
+    if (times.length === 0) {
+      document.getElementById("firstMeal").textContent = "—";
+      document.getElementById("lastMeal").textContent  = "—";
+    } else {
+      document.getElementById("firstMeal").textContent = fmt12(times[0]);
+      document.getElementById("lastMeal").textContent  = fmt12(times[times.length - 1]);
+    }
+  }
+
+  function fmt12(t) {
+    if (!t) return "—";
+    const [h, m] = t.split(":").map(Number);
+    return `${h % 12 || 12}:${String(m).padStart(2,"0")}${h < 12 ? "am" : "pm"}`;
+  }
+
+  function esc(str) {
+    return (str || "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+/* ═══════════════════════════════════════════════════════════════
+   PIN MODAL
+═══════════════════════════════════════════════════════════════ */
+  const pinModal   = document.getElementById("pinModal");
+  const pinInput   = document.getElementById("pinInput");
+  const pinError   = document.getElementById("pinError");
+
+  function openPinModal() {
+    pinInput.value = "";
+    pinError.textContent = "";
+    pinInput.classList.remove("error");
+    pinModal.classList.remove("hidden");
+    setTimeout(() => pinInput.focus(), 100);
+  }
+
+  function closePinModal() {
+    pinModal.classList.add("hidden");
+  }
+
+  function confirmPin() {
+    if (pinInput.value === EDITOR_PIN) {
+      isEditor = true;
+      sessionStorage.setItem("bfRole", "editor");
+      closePinModal();
+      render();
+      showToast("Editor mode unlocked ✏️");
+    } else {
+      pinInput.classList.add("error");
+      pinError.textContent = "❌ Incorrect PIN. Try again.";
+      pinInput.value = "";
+      setTimeout(() => pinInput.classList.remove("error"), 400);
+    }
+  }
+
+  document.getElementById("pinConfirm").addEventListener("click", confirmPin);
+  document.getElementById("pinCancel").addEventListener("click", closePinModal);
+  pinInput.addEventListener("keydown", e => { if (e.key === "Enter") confirmPin(); });
+  pinModal.addEventListener("click", e => { if (e.target === pinModal) closePinModal(); });
+
+/* ═══════════════════════════════════════════════════════════════
+   ROLE BADGE CLICK
+═══════════════════════════════════════════════════════════════ */
+  document.getElementById("roleBadge").addEventListener("click", () => {
+    if (isEditor) {
+      // Lock back to viewer
+      isEditor = false;
+      sessionStorage.removeItem("bfRole");
+      render();
+      showToast("Switched to viewer mode 👁");
+    } else {
+      openPinModal();
+    }
+  });
+
+/* ═══════════════════════════════════════════════════════════════
+   DATE NAVIGATION
+═══════════════════════════════════════════════════════════════ */
+  function changeDate(newDate) {
+    unsubscribeCurrent();
+    currentDate  = newDate;
+    currentRows  = [];
+    currentNotes = "";
+    render();
+    subscribeToDate(currentDate);
+  }
+
+  document.getElementById("prevDay").addEventListener("click", () => {
+    changeDate(offsetDate(currentDate, -1));
+  });
+
+  document.getElementById("nextDay").addEventListener("click", () => {
+    if (currentDate >= todayKey()) return;
+    changeDate(offsetDate(currentDate, 1));
+  });
+
+/* ═══════════════════════════════════════════════════════════════
+   ADD ROW (editor)
+═══════════════════════════════════════════════════════════════ */
+  document.getElementById("addRowBtn").addEventListener("click", () => {
+    const now = new Date();
+    const hh  = String(now.getHours()).padStart(2, "0");
+    const mm  = String(now.getMinutes()).padStart(2, "0");
+    const rows = [...currentRows, { time: `${hh}:${mm}`, food: "" }];
+    pushData(rows, currentNotes);
+    // Focus new text input after render
+    setTimeout(() => {
+      const inputs = document.querySelectorAll("#feedingBody td input[type='text']");
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    }, 300);
+  });
+
+/* ═══════════════════════════════════════════════════════════════
+   INLINE EDIT — TIME (editor)
+═══════════════════════════════════════════════════════════════ */
+  document.getElementById("feedingBody").addEventListener("change", e => {
+    if (!isEditor) return;
+    const el = e.target;
+    if (!el.dataset.i) return;
+    const i = parseInt(el.dataset.i);
+    const rows = currentRows.map(r => ({ ...r }));
+    rows[i][el.dataset.field] = el.value;
+    pushData(rows, currentNotes);
+  });
+
+/* ═══════════════════════════════════════════════════════════════
+   INLINE EDIT — LIVE EMOJI + time (editor)
+═══════════════════════════════════════════════════════════════ */
+  let foodDebounce = null;
+  document.getElementById("feedingBody").addEventListener("input", e => {
+    if (!isEditor) return;
+    const el = e.target;
+    if (!el.dataset.field) return;
+
+    if (el.dataset.field === "food") {
+      // Update emoji live (no DB write yet — wait for change/blur)
+      const wrap = el.closest(".food-wrap");
+      if (wrap) wrap.querySelector(".food-emoji").textContent = foodEmoji(el.value);
+
+      // Debounce DB write so we don't spam on every keystroke
+      clearTimeout(foodDebounce);
+      foodDebounce = setTimeout(() => {
+        const i = parseInt(el.dataset.i);
+        const rows = currentRows.map(r => ({ ...r }));
+        rows[i].food = el.value;
+        pushData(rows, currentNotes);
+      }, 600);
+    }
+
+    if (el.dataset.field === "time") {
+      const i = parseInt(el.dataset.i);
+      const rows = currentRows.map(r => ({ ...r }));
+      rows[i].time = el.value;
+      pushData(rows, currentNotes);
+    }
+  });
+
+/* ═══════════════════════════════════════════════════════════════
+   DELETE ROW (editor)
+═══════════════════════════════════════════════════════════════ */
+  document.getElementById("feedingBody").addEventListener("click", e => {
+    if (!isEditor) return;
+    const btn = e.target.closest(".btn-del");
+    if (!btn) return;
+    const i = parseInt(btn.dataset.i);
+    const rows = [...currentRows];
+    rows.splice(i, 1);
+    pushData(rows, currentNotes);
+    showToast("Feeding removed 🗑");
+  });
+
+/* ═══════════════════════════════════════════════════════════════
+   CLEAR DAY (editor)
+═══════════════════════════════════════════════════════════════ */
+  document.getElementById("clearDayBtn").addEventListener("click", () => {
+    if (!isEditor) return;
+    if (currentRows.length === 0) { showToast("Nothing to clear 😊"); return; }
+    if (confirm("Clear all feedings for this day?")) {
+      pushData([], "");
+      showToast("Day cleared ✅");
+    }
+  });
+
+/* ═══════════════════════════════════════════════════════════════
+   NOTES (editor - debounced write)
+═══════════════════════════════════════════════════════════════ */
+  let notesDebounce = null;
+  document.getElementById("notesField").addEventListener("input", e => {
+    if (!isEditor) return;
+    currentNotes = e.target.value;
+    clearTimeout(notesDebounce);
+    notesDebounce = setTimeout(() => {
+      pushData(currentRows, currentNotes);
+    }, 700);
+  });
+
+/* ═══════════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════════ */
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+  }
+
+/* ═══════════════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════════════ */
+  // Wait for Firebase connection confirmation, then hide overlay
+  db.ref(".info/connected").on("value", snap => {
+    if (snap.val() === true) {
+      document.getElementById("connectingOverlay").style.display = "none";
+    }
+  });
+
+  // Start listening to today's data
+  subscribeToDate(currentDate);
+
+/*
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  FIREBASE REALTIME DATABASE RULES (paste in Firebase console) ║
+  ╠══════════════════════════════════════════════════════════════╣
+  ║  {                                                           ║
+  ║    "rules": {                                                ║
+  ║      "babyFoodie": {                                         ║
+  ║        ".read": true,                                        ║
+  ║        ".write": true                                        ║
+  ║      }                                                       ║
+  ║    }                                                         ║
+  ║  }                                                           ║
+  ╚══════════════════════════════════════════════════════════════╝
+*/
+</script>
+</body>
+</html>

@@ -1,1447 +1,1043 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Baby Foodie" />
-  <meta name="theme-color" content="#ff8fab" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Baby Tracker"/>
+  <meta name="theme-color" content="#ff8fab"/>
   <title>🍼 Baby Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --pink:       #ff8fab;
-      --pink-dark:  #e0607e;
-      --pink-light: #ffd6e7;
-      --peach:      #fff0f5;
-      --blue:       #dbeafe;
-      --blue-dark:  #2563eb;
-      --mint:       #d4f1e4;
-      --mint-dark:  #27ae60;
-      --yellow:     #fef9c3;
-      --yellow-dark:#b45309;
-      --purple:     #ede9fe;
-      --purple-dark:#7c3aed;
-      --text:       #4a3040;
-      --subtext:    #9e7d8f;
-      --white:      #ffffff;
-      --shadow:     rgba(255,143,171,0.2);
-      --radius:     16px;
-      --radius-sm:  10px;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --pink:#ff8fab;--pink-dark:#e0607e;--pink-light:#ffd6e7;--peach:#fff0f5;
+      --blue:#dbeafe;--blue-dark:#2563eb;
+      --yellow:#fef9c3;--yellow-dark:#b45309;
+      --green:#dcfce7;--green-dark:#166534;
+      --purple:#ede9fe;--purple-dark:#7c3aed;
+      --text:#4a3040;--subtext:#9e7d8f;--white:#fff;
+      --shadow:rgba(255,143,171,.2);--radius:16px;--radius-sm:10px;
     }
-    html,body { height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--peach); color:var(--text); }
-    body { display:flex; flex-direction:column; min-height:100dvh; padding-bottom:env(safe-area-inset-bottom); }
+    html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--peach);color:var(--text)}
+    body{display:flex;flex-direction:column;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom)}
+
+    /* ── NAV WRAPPER ── */
+    .top-nav{position:sticky;top:0;z-index:200}
 
     /* ── HEADER ── */
-    header {
-      background:linear-gradient(135deg,var(--pink) 0%,#ffb3c6 100%);
-      color:var(--white); padding:20px 16px 12px;
-      padding-top:calc(20px + env(safe-area-inset-top));
-      text-align:center; box-shadow:0 4px 16px var(--shadow);
-      position:sticky; top:0; z-index:100;
-    }
-    header h1 { font-size:1.4rem; font-weight:800; }
-    header p.subtitle { font-size:0.76rem; opacity:.88; margin-top:2px; }
-    .role-badge {
-      display:inline-flex; align-items:center; gap:5px;
-      margin-top:8px; padding:4px 12px; border-radius:100px;
-      font-size:0.72rem; font-weight:700; letter-spacing:.4px;
-      text-transform:uppercase; cursor:pointer;
-      border:1.5px solid #fff6; background:#fff3; color:var(--white);
-      transition:opacity .2s;
-    }
-    .role-badge:active { opacity:.75; }
-    .live-dot { width:7px; height:7px; border-radius:50%; background:#4ade80; display:inline-block; animation:pulse 1.6s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
+    header{background:linear-gradient(135deg,var(--pink) 0%,#ffb3c6 100%);color:var(--white);padding:18px 16px 12px;padding-top:calc(18px + env(safe-area-inset-top));text-align:center}
+    header h1{font-size:1.4rem;font-weight:800}
+    header p.subtitle{font-size:.76rem;opacity:.88;margin-top:2px}
+    .role-badge{display:inline-flex;align-items:center;gap:5px;margin-top:7px;padding:4px 12px;border-radius:100px;font-size:.7rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;border:1.5px solid #fff6;background:#fff3;color:var(--white);transition:opacity .2s}
+    .role-badge:active{opacity:.75}
+    .live-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;animation:pulse 1.6s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
 
     /* ── TAB BAR ── */
-    .tab-bar {
-      display:flex; background:var(--white);
-      border-bottom:2px solid var(--pink-light);
-      position:sticky; top:88px; z-index:98;
-      overflow-x:auto; scrollbar-width:none;
-    }
-    .tab-bar::-webkit-scrollbar { display:none; }
-    .tab-btn {
-      flex:1; min-width:70px; padding:11px 6px 9px;
-      border:none; background:transparent;
-      font-size:0.7rem; font-weight:700; color:var(--subtext);
-      cursor:pointer; border-bottom:3px solid transparent;
-      transition:color .2s, border-color .2s;
-      white-space:nowrap; display:flex; flex-direction:column;
-      align-items:center; gap:3px;
-    }
-    .tab-btn .tab-icon { font-size:1.2rem; }
-    .tab-btn.active { color:var(--pink-dark); border-bottom-color:var(--pink); }
+    .tab-bar{display:flex;background:var(--white);border-bottom:2px solid var(--pink-light);overflow-x:auto;scrollbar-width:none}
+    .tab-bar::-webkit-scrollbar{display:none}
+    .tab-btn{flex:1;min-width:72px;padding:10px 4px 8px;border:none;background:transparent;font-size:.7rem;font-weight:700;color:var(--subtext);cursor:pointer;border-bottom:3px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:3px;-webkit-tap-highlight-color:transparent}
+    .tab-btn .tab-icon{font-size:1.2rem}
+    .tab-btn.active{color:var(--pink-dark);border-bottom-color:var(--pink)}
 
     /* ── DATE NAV ── */
-    .date-nav {
-      display:flex; align-items:center; gap:12px;
-      background:var(--white); padding:10px 16px;
-      border-bottom:1px solid var(--pink-light);
-      position:sticky; top:134px; z-index:97;
-    }
-    .date-nav button {
-      background:var(--pink-light); border:none; border-radius:50%;
-      width:34px; height:34px; font-size:1rem; cursor:pointer;
-      color:var(--pink-dark); display:flex; align-items:center; justify-content:center;
-      transition:background .2s, transform .1s;
-    }
-    .date-nav button:active { transform:scale(.92); }
-    .date-nav button:hover  { background:var(--pink); color:var(--white); }
-    .date-nav button:disabled { opacity:.35; cursor:default; }
-    #dateDisplay { font-size:.95rem; font-weight:700; color:var(--text); flex:1; text-align:center; line-height:1.2; }
-    #dateDisplay span { display:block; font-size:.68rem; font-weight:500; color:var(--subtext); }
+    .date-nav{display:flex;align-items:center;gap:12px;background:var(--white);padding:10px 16px;border-bottom:1px solid var(--pink-light)}
+    .date-nav button{background:var(--pink-light);border:none;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer;color:var(--pink-dark);display:flex;align-items:center;justify-content:center;transition:background .2s,transform .1s}
+    .date-nav button:active{transform:scale(.92)}
+    .date-nav button:hover{background:var(--pink);color:var(--white)}
+    .date-nav button:disabled{opacity:.35;cursor:default}
+    #dateDisplay{font-size:.95rem;font-weight:700;color:var(--text);flex:1;text-align:center;line-height:1.2}
+    #dateDisplay span{display:block;font-size:.68rem;font-weight:500;color:var(--subtext)}
 
     /* ── MAIN ── */
-    main { flex:1; max-width:640px; width:100%; margin:0 auto; }
+    main{flex:1;max-width:640px;width:100%;margin:0 auto}
 
     /* ── PAGES ── */
-    .page { display:none; padding:14px 16px; }
-    .page.active { display:block; }
+    .page{display:none;padding:14px 16px 24px}
+    .page.active{display:block}
 
     /* ── VIEWER BANNER ── */
-    .viewer-banner {
-      display:flex; align-items:center; gap:8px;
-      background:var(--blue); border-radius:var(--radius-sm);
-      padding:9px 13px; margin-bottom:12px;
-      font-size:.8rem; color:var(--blue-dark); font-weight:600;
-    }
-    .viewer-banner.hidden { display:none; }
+    .viewer-banner{display:flex;align-items:center;gap:8px;background:var(--blue);border-radius:var(--radius-sm);padding:9px 13px;margin-bottom:12px;font-size:.8rem;color:var(--blue-dark);font-weight:600}
 
     /* ── SUMMARY BAR ── */
-    .summary-bar { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
-    .summary-card {
-      flex:1; min-width:70px; background:var(--white);
-      border-radius:var(--radius-sm); padding:9px 8px;
-      text-align:center; box-shadow:0 2px 8px var(--shadow);
-    }
-    .summary-card .num { font-size:1.5rem; font-weight:800; color:var(--pink-dark); line-height:1; }
-    .summary-card .lbl { font-size:.62rem; color:var(--subtext); margin-top:2px; text-transform:uppercase; letter-spacing:.4px; }
+    .summary-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+    .sum-card{flex:1;min-width:72px;background:var(--white);border-radius:var(--radius-sm);padding:9px 8px;text-align:center;box-shadow:0 2px 8px var(--shadow)}
+    .sum-card .num{font-size:1.5rem;font-weight:800;color:var(--pink-dark);line-height:1}
+    .sum-card .lbl{font-size:.62rem;color:var(--subtext);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
 
-    /* ── SECTION CARD ── */
-    .section-card {
-      background:var(--white); border-radius:var(--radius);
-      box-shadow:0 4px 20px var(--shadow); overflow:hidden; margin-bottom:16px;
-    }
-    .section-header {
-      padding:12px 14px 10px; border-bottom:1px solid #fce4ec;
-      display:flex; align-items:center; justify-content:space-between;
-    }
-    .section-title { font-size:.85rem; font-weight:800; color:var(--text); display:flex; align-items:center; gap:6px; }
+    /* ── CARD ── */
+    .card{background:var(--white);border-radius:var(--radius);box-shadow:0 4px 20px var(--shadow);overflow:hidden;margin-bottom:14px}
 
     /* ── TABLE ── */
-    table { width:100%; border-collapse:collapse; }
-    thead tr { background:linear-gradient(90deg,var(--pink) 0%,#ffb3c6 100%); }
-    thead th { color:var(--white); font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:9px 8px; text-align:left; }
-    thead th:first-child { padding-left:12px; }
-    tbody tr { border-bottom:1px solid #fce4ec; transition:background .15s; }
-    tbody tr:last-child { border-bottom:none; }
-    tbody tr:hover { background:#fff5f8; }
-    tbody tr.just-added { animation:rowPop .3s ease; }
-    @keyframes rowPop { 0%{opacity:0;transform:translateY(-5px)} 100%{opacity:1;transform:translateY(0)} }
-    td { padding:5px 6px; vertical-align:middle; }
-    td:first-child { padding-left:12px; }
+    table{width:100%;border-collapse:collapse}
+    thead tr{background:linear-gradient(90deg,var(--pink) 0%,#ffb3c6 100%)}
+    thead th{color:var(--white);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:9px 8px;text-align:left}
+    thead th:first-child{padding-left:12px}
+    tbody tr{border-bottom:1px solid #fce4ec;transition:background .15s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#fff5f8}
+    td{padding:5px 6px;vertical-align:middle}
+    td:first-child{padding-left:12px}
 
     /* ── TIME BUTTON ── */
-    .time-cell-wrap { display:flex; align-items:center; gap:4px; }
-    .time-display-btn {
-      flex:1; background:var(--peach); border:2px solid var(--pink-light);
-      border-radius:9px; padding:7px 6px; font-size:.82rem; font-weight:700;
-      color:var(--pink-dark); cursor:pointer; text-align:center;
-      transition:border-color .2s, background .2s; min-width:68px; white-space:nowrap;
-    }
-    .time-display-btn:hover,.time-display-btn:active { border-color:var(--pink); background:#ffd6e7; }
-    .btn-clock {
-      background:var(--pink-light); border:none; border-radius:8px;
-      width:30px; height:30px; font-size:.9rem; cursor:pointer;
-      display:flex; align-items:center; justify-content:center;
-      flex-shrink:0; transition:background .2s, transform .1s; color:var(--pink-dark);
-    }
-    .btn-clock:active { transform:scale(.9); }
-    .btn-clock:hover  { background:var(--pink); color:white; }
-
-    /* ── DIAPER TYPE BADGE ── */
-    .diaper-type-btn {
-      padding:5px 10px; border-radius:100px; border:2px solid transparent;
-      font-size:.75rem; font-weight:700; cursor:pointer; transition:all .2s;
-    }
-    .diaper-type-btn.wet  { background:var(--blue);   color:var(--blue-dark);   border-color:var(--blue-dark); }
-    .diaper-type-btn.poo  { background:var(--yellow);  color:var(--yellow-dark); border-color:var(--yellow-dark); }
-    .diaper-type-btn.both { background:var(--purple);  color:var(--purple-dark); border-color:var(--purple-dark); }
-    .diaper-type-btn:hover { opacity:.8; }
-
-    /* ── POO COLOR BADGE ── */
-    .poo-color-btn {
-      display:inline-flex; align-items:center; gap:4px;
-      padding:4px 9px; border-radius:100px; border:none;
-      font-size:.72rem; font-weight:700; cursor:pointer; transition:opacity .2s;
-    }
-    .poo-color-btn:hover { opacity:.8; }
+    .time-wrap{display:flex;align-items:center;gap:4px}
+    .time-btn{flex:1;background:var(--peach);border:2px solid var(--pink-light);border-radius:9px;padding:7px 6px;font-size:.82rem;font-weight:700;color:var(--pink-dark);cursor:pointer;text-align:center;transition:border-color .2s,background .2s;min-width:68px;white-space:nowrap}
+    .time-btn:hover,.time-btn:active{border-color:var(--pink);background:#ffd6e7}
+    .clock-btn{background:var(--pink-light);border:none;border-radius:8px;width:30px;height:30px;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s,transform .1s;color:var(--pink-dark)}
+    .clock-btn:active{transform:scale(.9)}
+    .clock-btn:hover{background:var(--pink);color:white}
 
     /* ── FOOD INPUT ── */
-    td input[type="text"] {
-      width:100%; border:1.5px solid transparent; border-radius:8px;
-      padding:7px 7px; font-size:.85rem; font-family:inherit;
-      color:var(--text); background:transparent;
-      transition:border-color .2s, background .2s; outline:none;
-    }
-    td input[type="text"]:focus { border-color:var(--pink); background:var(--peach); }
+    .food-wrap{display:flex;align-items:center;gap:4px}
+    .food-emoji{font-size:1rem;flex-shrink:0}
+    td input[type="text"]{width:100%;border:1.5px solid transparent;border-radius:8px;padding:7px 7px;font-size:.85rem;font-family:inherit;color:var(--text);background:transparent;transition:border-color .2s,background .2s;outline:none}
+    td input[type="text"]:focus{border-color:var(--pink);background:var(--peach)}
 
-    /* ── READ-ONLY ── */
-    .cell-ro { padding:7px 6px; font-size:.85rem; color:var(--text); }
-    .cell-ro.time { font-weight:700; color:var(--pink-dark); white-space:nowrap; }
+    /* ── READ ONLY CELL ── */
+    .cell-ro{padding:7px 6px;font-size:.85rem;color:var(--text)}
+    .cell-ro.t{font-weight:700;color:var(--pink-dark);white-space:nowrap}
 
-    /* ── FOOD EMOJI ── */
-    .food-wrap { display:flex; align-items:center; gap:4px; }
-    .food-emoji { font-size:1rem; flex-shrink:0; }
+    /* ── DIAPER TYPE CHIPS ── */
+    .dtype-wrap{display:flex;gap:5px;padding:6px 0;flex-wrap:wrap}
+    .dtype-btn{padding:5px 11px;border-radius:100px;border:2px solid transparent;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+    .dtype-btn.wet{background:var(--blue);color:var(--blue-dark);border-color:#bfdbfe}
+    .dtype-btn.poo{background:var(--yellow);color:var(--yellow-dark);border-color:#fde68a}
+    .dtype-btn.both{background:var(--green);color:var(--green-dark);border-color:#bbf7d0}
+    .dtype-btn.sel{box-shadow:0 0 0 2px var(--text);transform:scale(1.06)}
+
+    /* ── POO COLOR SWATCHES ── */
+    .poo-wrap{padding:6px 0}
+    .poo-label{font-size:.68rem;font-weight:700;color:var(--subtext);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+    .poo-swatches{display:flex;gap:7px;flex-wrap:wrap}
+    .swatch{width:28px;height:28px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;-webkit-tap-highlight-color:transparent}
+    .swatch.sel{transform:scale(1.25);border-color:var(--text)}
+    .poo-tag{display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-size:.75rem;font-weight:700}
 
     /* ── EMPTY STATE ── */
-    .empty-state { padding:28px 16px; text-align:center; color:var(--subtext); }
-    .empty-state .e-icon { font-size:2.5rem; margin-bottom:6px; }
-    .empty-state p { font-size:.84rem; line-height:1.5; }
+    .empty{padding:28px 16px;text-align:center;color:var(--subtext)}
+    .empty .ei{font-size:2.6rem;margin-bottom:6px}
+    .empty p{font-size:.84rem;line-height:1.5}
 
-    /* ── BUTTONS ── */
-    .btn-del {
-      background:none; border:none; cursor:pointer; font-size:1rem;
-      width:34px; height:34px; border-radius:50%;
-      display:flex; align-items:center; justify-content:center;
-      margin:auto; transition:background .2s, transform .1s; color:#e57373;
-    }
-    .btn-del:hover  { background:#fce4ec; }
-    .btn-del:active { transform:scale(.88); }
+    /* ── DELETE BTN ── */
+    .del-btn{background:none;border:none;cursor:pointer;font-size:1rem;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:auto;transition:background .2s,transform .1s;color:#e57373}
+    .del-btn:hover{background:#fce4ec}
+    .del-btn:active{transform:scale(.88)}
 
-    .btn-add {
-      width:100%; padding:13px; border:none; border-radius:var(--radius);
-      background:linear-gradient(135deg,var(--pink),#ffb3c6);
-      color:var(--white); font-size:.95rem; font-weight:700;
-      cursor:pointer; box-shadow:0 4px 14px var(--shadow);
-      transition:transform .15s; display:flex; align-items:center;
-      justify-content:center; gap:7px; margin-top:12px;
-    }
-    .btn-add:active { transform:scale(.97); }
-    .btn-add.mint {
-      background:linear-gradient(135deg,#3aaa6f,#52d68a);
-      box-shadow:0 4px 14px rgba(58,170,111,.25);
-    }
-    .btn-add.yellow {
-      background:linear-gradient(135deg,#d97706,#fbbf24);
-      box-shadow:0 4px 14px rgba(217,119,6,.25);
-    }
-
-    .btn-clear {
-      width:100%; margin-top:8px; padding:11px;
-      border:2px solid #fce4ec; border-radius:var(--radius);
-      background:var(--white); color:var(--subtext);
-      font-size:.82rem; font-weight:600; cursor:pointer;
-      transition:border-color .2s, color .2s;
-      display:flex; align-items:center; justify-content:center; gap:6px;
-    }
-    .btn-clear:hover { border-color:#e57373; color:#e57373; }
-
-    .hidden { display:none !important; }
+    /* ── ADD / CLEAR BTNS ── */
+    .add-btn{width:100%;padding:13px;border:none;border-radius:var(--radius);background:linear-gradient(135deg,var(--pink),#ffb3c6);color:var(--white);font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px var(--shadow);transition:transform .15s;display:flex;align-items:center;justify-content:center;gap:7px;-webkit-tap-highlight-color:transparent}
+    .add-btn:active{transform:scale(.97)}
+    .add-btn.green-btn{background:linear-gradient(135deg,#27ae60,#52d68a);box-shadow:0 4px 14px rgba(39,174,96,.25)}
+    .add-btn.yellow-btn{background:linear-gradient(135deg,#d97706,#fbbf24);box-shadow:0 4px 14px rgba(217,119,6,.25)}
+    .clear-btn{width:100%;margin-top:8px;padding:11px;border:2px solid #fce4ec;border-radius:var(--radius);background:var(--white);color:var(--subtext);font-size:.82rem;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s;display:flex;align-items:center;justify-content:center;gap:6px;-webkit-tap-highlight-color:transparent}
+    .clear-btn:hover{border-color:#e57373;color:#e57373}
 
     /* ── NOTES ── */
-    .notes-section { margin-top:14px; background:var(--white); border-radius:var(--radius); box-shadow:0 4px 20px var(--shadow); overflow:hidden; }
-    .notes-section label { display:block; padding:11px 14px 5px; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--subtext); }
-    .notes-section textarea { width:100%; border:none; padding:5px 14px 14px; font-size:.88rem; font-family:inherit; color:var(--text); background:transparent; resize:none; outline:none; min-height:70px; }
-    .notes-ro { padding:5px 14px 14px; font-size:.88rem; color:var(--text); white-space:pre-wrap; min-height:40px; line-height:1.5; }
+    .notes-box{margin-top:14px;background:var(--white);border-radius:var(--radius);box-shadow:0 4px 20px var(--shadow);overflow:hidden}
+    .notes-box label{display:block;padding:11px 14px 5px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--subtext)}
+    .notes-box textarea{width:100%;border:none;padding:5px 14px 14px;font-size:.88rem;font-family:inherit;color:var(--text);background:transparent;resize:none;outline:none;min-height:70px}
+    .notes-ro{padding:5px 14px 14px;font-size:.88rem;color:var(--text);white-space:pre-wrap;min-height:36px;line-height:1.5}
 
-    /* ══════════════════════════════════════
-       ANALYTICS PAGE
-    ══════════════════════════════════════ */
-    .analytics-header {
-      background:linear-gradient(135deg,var(--purple-dark),#a855f7);
-      color:white; border-radius:var(--radius); padding:16px;
-      margin-bottom:14px; text-align:center;
-    }
-    .analytics-header h2 { font-size:1.1rem; font-weight:800; }
-    .analytics-header p { font-size:.75rem; opacity:.85; margin-top:3px; }
+    /* ── ANALYTICS ── */
+    .analytics-hdr{background:linear-gradient(135deg,var(--purple-dark),#a855f7);color:white;border-radius:var(--radius);padding:16px;margin-bottom:14px;text-align:center}
+    .analytics-hdr h2{font-size:1.1rem;font-weight:800}
+    .analytics-hdr p{font-size:.74rem;opacity:.85;margin-top:3px}
+    .week-nav{display:flex;align-items:center;gap:10px;background:var(--white);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;box-shadow:0 2px 8px var(--shadow)}
+    .week-nav button{background:var(--pink-light);border:none;border-radius:50%;width:32px;height:32px;font-size:.95rem;cursor:pointer;color:var(--pink-dark);display:flex;align-items:center;justify-content:center;transition:background .2s;-webkit-tap-highlight-color:transparent}
+    .week-nav button:hover{background:var(--pink);color:white}
+    .week-nav button:disabled{opacity:.35;cursor:default}
+    #weekLabel{flex:1;text-align:center;font-size:.85rem;font-weight:700;color:var(--text)}
+    .a-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+    .a-card{background:var(--white);border-radius:var(--radius-sm);padding:12px;box-shadow:0 2px 8px var(--shadow);text-align:center}
+    .a-card.full{grid-column:1/-1}
+    .a-card .a-icon{font-size:1.6rem;margin-bottom:4px}
+    .a-card .a-val{font-size:1.4rem;font-weight:800;color:var(--pink-dark);line-height:1}
+    .a-card .a-lbl{font-size:.64rem;color:var(--subtext);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
+    .a-card.g .a-val{color:var(--green-dark)}
+    .a-card.y .a-val{color:var(--yellow-dark)}
+    .a-card.p .a-val{color:var(--purple-dark)}
+    .chart-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .chart-lbl{font-size:.68rem;font-weight:600;color:var(--subtext);width:28px;text-align:right;flex-shrink:0}
+    .chart-bars{flex:1;display:flex;flex-direction:column;gap:3px}
+    .bar-track{background:#fce4ec;border-radius:100px;height:18px;overflow:hidden}
+    .bar-track.b{background:var(--blue)}
+    .bar-track.y{background:var(--yellow)}
+    .bar-fill{height:100%;border-radius:100px;display:flex;align-items:center;padding-left:7px;font-size:.66rem;font-weight:700;color:white;min-width:0;transition:width .5s ease}
+    .bar-fill.m{background:linear-gradient(90deg,var(--pink),#ffb3c6)}
+    .bar-fill.d{background:linear-gradient(90deg,#60a5fa,#93c5fd)}
+    .bar-fill.p{background:linear-gradient(90deg,#d97706,#fbbf24)}
+    .food-list .fi{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #fce4ec;font-size:.82rem}
+    .food-list .fi:last-child{border-bottom:none}
+    .fi .fc{margin-left:auto;font-weight:700;color:var(--pink-dark)}
+    .no-data{text-align:center;padding:20px;color:var(--subtext);font-size:.84rem}
 
-    .week-selector {
-      display:flex; align-items:center; gap:10px;
-      background:var(--white); border-radius:var(--radius-sm);
-      padding:10px 14px; margin-bottom:14px;
-      box-shadow:0 2px 8px var(--shadow);
-    }
-    .week-selector button {
-      background:var(--pink-light); border:none; border-radius:50%;
-      width:32px; height:32px; font-size:.95rem; cursor:pointer;
-      color:var(--pink-dark); display:flex; align-items:center; justify-content:center;
-      transition:background .2s;
-    }
-    .week-selector button:hover { background:var(--pink); color:white; }
-    #weekLabel { flex:1; text-align:center; font-size:.85rem; font-weight:700; color:var(--text); }
-
-    .analytics-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
-    .analytics-card {
-      background:var(--white); border-radius:var(--radius-sm);
-      padding:12px; box-shadow:0 2px 8px var(--shadow); text-align:center;
-    }
-    .analytics-card .a-icon { font-size:1.6rem; margin-bottom:4px; }
-    .analytics-card .a-val { font-size:1.4rem; font-weight:800; color:var(--pink-dark); line-height:1; }
-    .analytics-card .a-lbl { font-size:.65rem; color:var(--subtext); margin-top:3px; text-transform:uppercase; letter-spacing:.4px; }
-    .analytics-card.full { grid-column:1/-1; }
-    .analytics-card.green .a-val { color:var(--mint-dark); }
-    .analytics-card.yellow .a-val { color:var(--yellow-dark); }
-    .analytics-card.purple .a-val { color:var(--purple-dark); }
-
-    /* Bar chart */
-    .bar-chart { width:100%; margin-top:10px; }
-    .bar-chart-row {
-      display:flex; align-items:center; gap:8px;
-      margin-bottom:8px;
-    }
-    .bar-label { font-size:.68rem; font-weight:600; color:var(--subtext); width:28px; text-align:right; flex-shrink:0; }
-    .bar-track { flex:1; background:#fce4ec; border-radius:100px; height:20px; overflow:hidden; position:relative; }
-    .bar-fill { height:100%; border-radius:100px; display:flex; align-items:center; padding-left:8px; font-size:.68rem; font-weight:700; color:white; transition:width .6s ease; min-width:0; }
-    .bar-fill.meals   { background:linear-gradient(90deg,var(--pink),#ffb3c6); }
-    .bar-fill.diapers { background:linear-gradient(90deg,#60a5fa,#93c5fd); }
-    .bar-fill.poos    { background:linear-gradient(90deg,#d97706,#fbbf24); }
-
-    /* Food frequency */
-    .food-freq-list { text-align:left; margin-top:8px; }
-    .food-freq-item {
-      display:flex; align-items:center; gap:8px;
-      padding:6px 0; border-bottom:1px solid #fce4ec;
-      font-size:.82rem;
-    }
-    .food-freq-item:last-child { border-bottom:none; }
-    .food-freq-count {
-      margin-left:auto; font-weight:700; color:var(--pink-dark);
-      font-size:.82rem;
-    }
-
-    /* No data */
-    .no-data { text-align:center; padding:24px; color:var(--subtext); font-size:.84rem; }
-
-    /* ══════════════════════════════════════
-       TIME PICKER BOTTOM SHEET
-    ══════════════════════════════════════ */
-    .modal-overlay {
-      position:fixed; inset:0; z-index:500;
-      background:rgba(74,48,64,.55); backdrop-filter:blur(4px);
-      display:flex; align-items:flex-end; justify-content:center;
-    }
-    .modal-overlay.hidden { display:none; }
-    .time-picker-sheet {
-      background:var(--white); border-radius:24px 24px 0 0;
-      width:100%; max-width:480px;
-      padding:20px 24px calc(24px + env(safe-area-inset-bottom));
-      box-shadow:0 -8px 40px rgba(0,0,0,.18);
-      animation:slideUp .28s ease;
-    }
-    @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
-    .tp-handle { width:40px; height:4px; background:#e0d0d8; border-radius:2px; margin:0 auto 18px; }
-    .tp-title { font-size:1rem; font-weight:800; text-align:center; margin-bottom:4px; color:var(--text); }
-    .tp-subtitle { font-size:.75rem; color:var(--subtext); text-align:center; margin-bottom:20px; }
-    .tp-time-display { font-size:3rem; font-weight:900; text-align:center; color:var(--pink-dark); letter-spacing:-2px; margin-bottom:22px; line-height:1; }
-    .tp-time-display .tp-ampm { font-size:1.3rem; font-weight:700; color:var(--subtext); letter-spacing:0; margin-left:5px; }
-    .tp-drums { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:22px; }
-    .tp-col-label { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--subtext); text-align:center; margin-bottom:5px; }
-    .tp-drum { display:flex; flex-direction:column; align-items:center; gap:2px; }
-    .tp-drum-scroll {
-      height:188px; overflow-y:scroll; scroll-snap-type:y mandatory;
-      -webkit-overflow-scrolling:touch; scrollbar-width:none;
-      border-radius:13px; background:var(--peach);
-      border:2px solid var(--pink-light); width:68px; position:relative;
-    }
-    .tp-drum-scroll::-webkit-scrollbar { display:none; }
-    .ghost { height:66px; flex-shrink:0; display:block; }
-    .tp-drum-item {
-      height:52px; display:flex; align-items:center; justify-content:center;
-      scroll-snap-align:center; font-size:1.3rem; font-weight:700;
-      color:var(--subtext); cursor:pointer; border-radius:9px;
-      transition:color .15s, background .15s; user-select:none;
-    }
-    .tp-drum-item:hover { background:var(--pink-light); color:var(--pink-dark); }
-    .tp-drum-item.selected { color:var(--pink-dark); background:var(--pink-light); }
-    .tp-separator { font-size:1.8rem; font-weight:900; color:var(--pink); margin-top:26px; padding:0 2px; }
-    .tp-ampm-toggle { display:flex; flex-direction:column; gap:6px; margin-top:26px; }
-    .tp-ampm-btn {
-      width:50px; padding:9px 0; border:2px solid var(--pink-light);
-      border-radius:9px; background:var(--peach); color:var(--subtext);
-      font-size:.82rem; font-weight:700; cursor:pointer; text-align:center;
-      transition:background .2s, color .2s, border-color .2s;
-    }
-    .tp-ampm-btn.active { background:var(--pink); color:var(--white); border-color:var(--pink); }
-    .tp-actions { display:flex; gap:10px; }
-    .tp-actions button {
-      flex:1; padding:13px; border:none; border-radius:13px;
-      font-size:.95rem; font-weight:700; cursor:pointer;
-      font-family:inherit; transition:opacity .2s, transform .1s;
-    }
-    .tp-actions button:active { transform:scale(.97); }
-    .tp-btn-confirm { background:linear-gradient(135deg,var(--pink),#ffb3c6); color:var(--white); }
-    .tp-btn-cancel  { background:var(--peach); color:var(--subtext); }
+    /* ── TIME PICKER SHEET ── */
+    .overlay{position:fixed;inset:0;z-index:500;background:rgba(74,48,64,.55);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}
+    .overlay.hidden{display:none}
+    .tp-sheet{background:var(--white);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 24px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -8px 40px rgba(0,0,0,.18);animation:slideUp .28s ease}
+    @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+    .tp-handle{width:40px;height:4px;background:#e0d0d8;border-radius:2px;margin:0 auto 18px}
+    .tp-title{font-size:1rem;font-weight:800;text-align:center;margin-bottom:3px}
+    .tp-sub{font-size:.74rem;color:var(--subtext);text-align:center;margin-bottom:18px}
+    .tp-preview{font-size:3rem;font-weight:900;text-align:center;color:var(--pink-dark);letter-spacing:-2px;margin-bottom:20px;line-height:1}
+    .tp-preview .ap{font-size:1.3rem;font-weight:700;color:var(--subtext);letter-spacing:0;margin-left:5px}
+    .tp-drums{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px}
+    .drum-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .drum-lbl{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--subtext)}
+    .drum{height:185px;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-radius:13px;background:var(--peach);border:2px solid var(--pink-light);width:68px}
+    .drum::-webkit-scrollbar{display:none}
+    .drum-ghost{height:66px;display:block}
+    .drum-item{height:52px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:1.3rem;font-weight:700;color:var(--subtext);cursor:pointer;border-radius:9px;transition:color .15s,background .15s;user-select:none}
+    .drum-item:hover,.drum-item.sel{background:var(--pink-light);color:var(--pink-dark)}
+    .tp-sep{font-size:1.8rem;font-weight:900;color:var(--pink);margin-top:26px;padding:0 2px}
+    .ampm-col{display:flex;flex-direction:column;gap:6px;margin-top:26px}
+    .ampm-btn{width:50px;padding:9px 0;border:2px solid var(--pink-light);border-radius:9px;background:var(--peach);color:var(--subtext);font-size:.82rem;font-weight:700;cursor:pointer;text-align:center;transition:all .2s;-webkit-tap-highlight-color:transparent}
+    .ampm-btn.sel{background:var(--pink);color:var(--white);border-color:var(--pink)}
+    .tp-actions{display:flex;gap:10px}
+    .tp-actions button{flex:1;padding:13px;border:none;border-radius:13px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .1s;-webkit-tap-highlight-color:transparent}
+    .tp-actions button:active{transform:scale(.97)}
+    .tp-ok{background:linear-gradient(135deg,var(--pink),#ffb3c6);color:var(--white)}
+    .tp-cancel{background:var(--peach);color:var(--subtext)}
 
     /* ── PIN MODAL ── */
-    .pin-overlay { position:fixed; inset:0; z-index:600; background:rgba(74,48,64,.55); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px; }
-    .pin-overlay.hidden { display:none; }
-    .modal-box { background:var(--white); border-radius:24px; padding:30px 26px; width:100%; max-width:340px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.2); animation:modalIn .25s ease; }
-    @keyframes modalIn { from{opacity:0;transform:scale(.9) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
-    .modal-box .modal-emoji { font-size:2.6rem; margin-bottom:8px; }
-    .modal-box h2 { font-size:1.15rem; font-weight:800; margin-bottom:4px; }
-    .modal-box p  { font-size:.8rem; color:var(--subtext); margin-bottom:18px; line-height:1.5; }
-    .modal-box input[type="password"] { width:100%; padding:12px 16px; border:2px solid var(--pink-light); border-radius:12px; font-size:1.2rem; text-align:center; letter-spacing:6px; outline:none; font-family:inherit; color:var(--text); margin-bottom:12px; transition:border-color .2s; }
-    .modal-box input[type="password"]:focus { border-color:var(--pink); }
-    .modal-box input.error { border-color:#e57373 !important; animation:shake .3s ease; }
-    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
-    .modal-btn-row { display:flex; gap:10px; }
-    .modal-btn-row button { flex:1; padding:12px; border:none; border-radius:12px; font-size:.92rem; font-weight:700; cursor:pointer; font-family:inherit; }
-    .btn-confirm { background:linear-gradient(135deg,var(--pink),#ffb3c6); color:var(--white); }
-    .btn-cancel  { background:var(--peach); color:var(--subtext); }
-    .modal-error { font-size:.76rem; color:#e57373; margin-top:-6px; margin-bottom:10px; min-height:16px; }
+    .pin-overlay{position:fixed;inset:0;z-index:600;background:rgba(74,48,64,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px}
+    .pin-overlay.hidden{display:none}
+    .pin-box{background:var(--white);border-radius:24px;padding:30px 26px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalIn .25s ease}
+    @keyframes modalIn{from{opacity:0;transform:scale(.9) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    .pin-box .pe{font-size:2.6rem;margin-bottom:8px}
+    .pin-box h2{font-size:1.15rem;font-weight:800;margin-bottom:4px}
+    .pin-box p{font-size:.8rem;color:var(--subtext);margin-bottom:18px;line-height:1.5}
+    .pin-box input[type="password"]{width:100%;padding:12px 16px;border:2px solid var(--pink-light);border-radius:12px;font-size:1.2rem;text-align:center;letter-spacing:6px;outline:none;font-family:inherit;color:var(--text);margin-bottom:12px;transition:border-color .2s}
+    .pin-box input[type="password"]:focus{border-color:var(--pink)}
+    .pin-box input.err{border-color:#e57373!important;animation:shake .3s ease}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+    .pin-row{display:flex;gap:10px}
+    .pin-row button{flex:1;padding:12px;border:none;border-radius:12px;font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+    .pin-ok{background:linear-gradient(135deg,var(--pink),#ffb3c6);color:var(--white)}
+    .pin-cancel{background:var(--peach);color:var(--subtext)}
+    .pin-err{font-size:.76rem;color:#e57373;margin-top:-6px;margin-bottom:10px;min-height:16px}
 
     /* ── CONNECTING ── */
-    #connectingOverlay { position:fixed; inset:0; z-index:700; background:var(--peach); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
-    #connectingOverlay .big-emoji { font-size:3rem; }
-    #connectingOverlay p { font-size:.92rem; color:var(--subtext); font-weight:600; }
-    .spinner { width:34px; height:34px; border:4px solid var(--pink-light); border-top-color:var(--pink); border-radius:50%; animation:spin .8s linear infinite; }
-    @keyframes spin { to{transform:rotate(360deg)} }
+    #connectingOverlay{position:fixed;inset:0;z-index:700;background:var(--peach);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+    .spinner{width:34px;height:34px;border:4px solid var(--pink-light);border-top-color:var(--pink);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
     /* ── TOAST ── */
-    #toast { position:fixed; bottom:calc(24px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%) translateY(80px); background:#333; color:#fff; padding:10px 20px; border-radius:100px; font-size:.82rem; font-weight:600; white-space:nowrap; z-index:999; transition:transform .3s ease, opacity .3s ease; opacity:0; }
-    #toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    #toast{position:fixed;bottom:calc(22px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(80px);background:#333;color:#fff;padding:10px 20px;border-radius:100px;font-size:.82rem;font-weight:600;white-space:nowrap;z-index:999;transition:transform .3s ease,opacity .3s ease;opacity:0}
+    #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
-    /* ── DIAPER TYPE SELECTOR ── */
-    .dtype-selector { display:flex; gap:6px; padding:10px 12px; flex-wrap:wrap; }
-    .dtype-opt { padding:7px 14px; border-radius:100px; border:2px solid transparent; font-size:.78rem; font-weight:700; cursor:pointer; transition:all .2s; }
-    .dtype-opt.wet  { background:var(--blue);   color:var(--blue-dark);   border-color:#bfdbfe; }
-    .dtype-opt.poo  { background:var(--yellow);  color:var(--yellow-dark); border-color:#fde68a; }
-    .dtype-opt.both { background:var(--purple);  color:var(--purple-dark); border-color:#c4b5fd; }
-    .dtype-opt.selected { transform:scale(1.06); box-shadow:0 2px 8px rgba(0,0,0,.12); }
+    footer{text-align:center;font-size:.68rem;color:var(--subtext);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
 
-    /* ── POO COLOR SELECTOR ── */
-    .pcolor-selector { display:flex; gap:6px; padding:8px 12px; flex-wrap:wrap; align-items:center; }
-    .pcolor-label { font-size:.72rem; font-weight:700; color:var(--subtext); text-transform:uppercase; }
-    .pcolor-opt { width:30px; height:30px; border-radius:50%; border:3px solid transparent; cursor:pointer; transition:transform .15s, border-color .15s; }
-    .pcolor-opt.selected { transform:scale(1.2); border-color:var(--text); }
-
-    footer { text-align:center; font-size:.68rem; color:var(--subtext); padding:10px 16px calc(10px + env(safe-area-inset-bottom)); }
+    .hidden{display:none!important}
   </style>
 </head>
 <body>
 
 <!-- CONNECTING -->
 <div id="connectingOverlay">
-  <div class="big-emoji">🍼</div>
+  <div style="font-size:3rem">🍼</div>
   <div class="spinner"></div>
-  <p>Connecting…</p>
+  <p style="font-size:.92rem;color:var(--subtext);font-weight:600">Connecting…</p>
 </div>
 
 <!-- PIN MODAL -->
 <div class="pin-overlay hidden" id="pinModal">
-  <div class="modal-box">
-    <div class="modal-emoji">🔐</div>
+  <div class="pin-box">
+    <div class="pe">🔐</div>
     <h2>Editor Access</h2>
-    <p>Enter the editor PIN to unlock editing.</p>
-    <input type="password" id="pinInput" maxlength="8" placeholder="••••" autocomplete="off" />
-    <div class="modal-error" id="pinError"></div>
-    <div class="modal-btn-row">
-      <button class="btn-cancel" id="pinCancel">Cancel</button>
-      <button class="btn-confirm" id="pinConfirm">Unlock ✓</button>
+    <p>Enter the PIN to unlock editing.<br>Viewers don't need a PIN.</p>
+    <input type="password" id="pinInput" maxlength="8" placeholder="••••" autocomplete="off"/>
+    <div class="pin-err" id="pinErr"></div>
+    <div class="pin-row">
+      <button class="pin-cancel" id="pinCancel">Cancel</button>
+      <button class="pin-ok"     id="pinOk">Unlock ✓</button>
     </div>
   </div>
 </div>
 
 <!-- TIME PICKER -->
-<div class="modal-overlay hidden" id="timePickerModal">
-  <div class="time-picker-sheet">
+<div class="overlay hidden" id="tpOverlay">
+  <div class="tp-sheet">
     <div class="tp-handle"></div>
     <div class="tp-title">⏰ Set Time</div>
-    <div class="tp-subtitle">Scroll to pick the time</div>
-    <div class="tp-time-display">
-      <span id="tpPreviewH">12</span>:<span id="tpPreviewM">00</span><span class="tp-ampm" id="tpPreviewAMPM">AM</span>
+    <div class="tp-sub">Scroll to pick the time</div>
+    <div class="tp-preview">
+      <span id="tpH">12</span>:<span id="tpM">00</span><span class="ap" id="tpAP">AM</span>
     </div>
     <div class="tp-drums">
-      <div class="tp-drum">
-        <div class="tp-col-label">Hour</div>
-        <div class="tp-drum-scroll" id="drumHour"></div>
+      <div class="drum-col">
+        <div class="drum-lbl">Hour</div>
+        <div class="drum" id="drumH"></div>
       </div>
-      <div class="tp-separator">:</div>
-      <div class="tp-drum">
-        <div class="tp-col-label">Min</div>
-        <div class="tp-drum-scroll" id="drumMin"></div>
+      <div class="tp-sep">:</div>
+      <div class="drum-col">
+        <div class="drum-lbl">Min</div>
+        <div class="drum" id="drumM"></div>
       </div>
-      <div class="tp-drum">
-        <div class="tp-col-label">AM/PM</div>
-        <div class="tp-ampm-toggle">
-          <button class="tp-ampm-btn active" id="btnAM">AM</button>
-          <button class="tp-ampm-btn" id="btnPM">PM</button>
+      <div class="drum-col">
+        <div class="drum-lbl">AM/PM</div>
+        <div class="ampm-col">
+          <button class="ampm-btn sel" id="btnAM">AM</button>
+          <button class="ampm-btn"     id="btnPM">PM</button>
         </div>
       </div>
     </div>
     <div class="tp-actions">
-      <button class="tp-btn-cancel" id="tpCancel">Cancel</button>
-      <button class="tp-btn-confirm" id="tpConfirm">✓ Set Time</button>
+      <button class="tp-cancel" id="tpCancel">Cancel</button>
+      <button class="tp-ok"     id="tpOk">✓ Set Time</button>
     </div>
   </div>
 </div>
 
-<!-- HEADER -->
-<header>
-  <h1>🍼 Baby Tracker</h1>
-  <p class="subtitle">Feeding • Diaper • Poo • Analytics</p>
-  <button class="role-badge" id="roleBadge">
-    <span class="live-dot"></span>
-    <span id="roleLabel">Viewer</span>
-  </button>
-</header>
-
-<!-- TAB BAR -->
-<div class="tab-bar">
-  <button class="tab-btn active" data-tab="feeding">
-    <span class="tab-icon">🍼</span>Feeding
-  </button>
-  <button class="tab-btn" data-tab="diaper">
-    <span class="tab-icon">👶</span>Diaper
-  </button>
-  <button class="tab-btn" data-tab="poo">
-    <span class="tab-icon">💩</span>Poo
-  </button>
-  <button class="tab-btn" data-tab="analytics">
-    <span class="tab-icon">📊</span>Analytics
-  </button>
-</div>
-
-<!-- DATE NAV -->
-<div class="date-nav">
-  <button id="prevDay">‹</button>
-  <div id="dateDisplay">
-    <strong id="dateLabel">Today</strong>
-    <span id="dateSubLabel"></span>
+<!-- TOP NAV -->
+<div class="top-nav">
+  <header>
+    <h1>🍼 Baby Tracker</h1>
+    <p class="subtitle">Feeding • Diaper • Poo • Analytics</p>
+    <button class="role-badge" id="roleBadge">
+      <span class="live-dot"></span><span id="roleLabel">Viewer</span>
+    </button>
+  </header>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="feeding"><span class="tab-icon">🍼</span>Feeding</button>
+    <button class="tab-btn"        data-tab="diaper" ><span class="tab-icon">👶</span>Diaper</button>
+    <button class="tab-btn"        data-tab="poo"    ><span class="tab-icon">💩</span>Poo</button>
+    <button class="tab-btn"        data-tab="analytics"><span class="tab-icon">📊</span>Analytics</button>
   </div>
-  <button id="nextDay">›</button>
+  <div class="date-nav" id="dateNav">
+    <button id="prevDay">‹</button>
+    <div id="dateDisplay"><strong id="dateLabel">Today</strong><span id="dateSub"></span></div>
+    <button id="nextDay">›</button>
+  </div>
 </div>
 
 <main>
-
-  <!-- ══════════════ FEEDING PAGE ══════════════ -->
+  <!-- FEEDING -->
   <div class="page active" id="page-feeding">
-    <div class="viewer-banner hidden" id="viewerBannerFeeding">👁 View-only mode — updates appear live.</div>
+    <div class="viewer-banner hidden" id="vbFeeding">👁 View-only — updates appear live</div>
     <div class="summary-bar">
-      <div class="summary-card"><div class="num" id="fMealCount">0</div><div class="lbl">🍽 Meals</div></div>
-      <div class="summary-card"><div class="num" id="fFirst">—</div><div class="lbl">🌅 First</div></div>
-      <div class="summary-card"><div class="num" id="fLast">—</div><div class="lbl">🌙 Last</div></div>
+      <div class="sum-card"><div class="num" id="fCount">0</div><div class="lbl">🍽 Meals</div></div>
+      <div class="sum-card"><div class="num" id="fFirst">—</div><div class="lbl">🌅 First</div></div>
+      <div class="sum-card"><div class="num" id="fLast" >—</div><div class="lbl">🌙 Last</div></div>
     </div>
-    <div class="section-card">
+    <div class="card">
       <table>
-        <thead><tr><th style="width:130px">⏰ Time</th><th>🥣 Food / Drink</th><th id="fActionCol" style="width:44px"></th></tr></thead>
-        <tbody id="feedingBody"></tbody>
+        <thead><tr>
+          <th style="width:130px">⏰ Time</th>
+          <th>🥣 Food / Drink</th>
+          <th id="fDelCol" style="width:44px"></th>
+        </tr></thead>
+        <tbody id="fBody"></tbody>
       </table>
-      <div id="fEmpty" class="empty-state"><div class="e-icon">🍼</div><p id="fEmptyMsg">No feedings yet.</p></div>
+      <div class="empty hidden" id="fEmpty"><div class="ei">🍼</div><p id="fEmptyMsg">No feedings yet.</p></div>
     </div>
-    <div id="fEditorControls" class="hidden">
-      <button class="btn-add" id="addFeedingBtn">＋ Add Feeding</button>
-      <button class="btn-clear" id="clearFeedingBtn">🗑 Clear All Feedings</button>
+    <div id="fControls" class="hidden">
+      <button class="add-btn"   id="addFeedBtn">＋ Add Feeding</button>
+      <button class="clear-btn" id="clrFeedBtn">🗑 Clear All Feedings</button>
     </div>
-    <div class="notes-section">
+    <div class="notes-box">
       <label>📝 Feeding Notes</label>
-      <textarea id="feedingNotes" placeholder="Any observations…" class="hidden"></textarea>
-      <div class="notes-ro hidden" id="feedingNotesRo"></div>
+      <textarea id="fNotes"   placeholder="Observations…" class="hidden"></textarea>
+      <div class="notes-ro hidden" id="fNotesRo"></div>
     </div>
   </div>
 
-  <!-- ══════════════ DIAPER PAGE ══════════════ -->
+  <!-- DIAPER -->
   <div class="page" id="page-diaper">
-    <div class="viewer-banner hidden" id="viewerBannerDiaper">👁 View-only mode — updates appear live.</div>
+    <div class="viewer-banner hidden" id="vbDiaper">👁 View-only — updates appear live</div>
     <div class="summary-bar">
-      <div class="summary-card"><div class="num" id="dTotal">0</div><div class="lbl">👶 Total</div></div>
-      <div class="summary-card"><div class="num" id="dWet">0</div><div class="lbl">💧 Wet</div></div>
-      <div class="summary-card"><div class="num" id="dDirty">0</div><div class="lbl">💩 Dirty</div></div>
+      <div class="sum-card"><div class="num" id="dCount">0</div><div class="lbl">👶 Total</div></div>
+      <div class="sum-card"><div class="num" id="dWet"  >0</div><div class="lbl">💧 Wet</div></div>
+      <div class="sum-card"><div class="num" id="dDirty">0</div><div class="lbl">💩 Dirty</div></div>
     </div>
-    <div class="section-card">
+    <div class="card">
       <table>
-        <thead><tr><th style="width:130px">⏰ Time</th><th>👶 Type</th><th id="dActionCol" style="width:44px"></th></tr></thead>
-        <tbody id="diaperBody"></tbody>
+        <thead><tr>
+          <th style="width:130px">⏰ Time</th>
+          <th>👶 Type</th>
+          <th id="dDelCol" style="width:44px"></th>
+        </tr></thead>
+        <tbody id="dBody"></tbody>
       </table>
-      <div id="dEmpty" class="empty-state"><div class="e-icon">👶</div><p id="dEmptyMsg">No diaper changes yet.</p></div>
+      <div class="empty hidden" id="dEmpty"><div class="ei">👶</div><p id="dEmptyMsg">No diaper changes yet.</p></div>
     </div>
-    <div id="dEditorControls" class="hidden">
-      <button class="btn-add mint" id="addDiaperBtn">＋ Add Diaper Change</button>
-      <button class="btn-clear" id="clearDiaperBtn">🗑 Clear All Diapers</button>
+    <div id="dControls" class="hidden">
+      <button class="add-btn green-btn" id="addDiapBtn">＋ Add Diaper Change</button>
+      <button class="clear-btn"         id="clrDiapBtn">🗑 Clear All Diapers</button>
     </div>
-    <div class="notes-section">
+    <div class="notes-box">
       <label>📝 Diaper Notes</label>
-      <textarea id="diaperNotes" placeholder="Any rash, concerns…" class="hidden"></textarea>
-      <div class="notes-ro hidden" id="diaperNotesRo"></div>
+      <textarea id="dNotes"   placeholder="Rash, concerns…" class="hidden"></textarea>
+      <div class="notes-ro hidden" id="dNotesRo"></div>
     </div>
   </div>
 
-  <!-- ══════════════ POO PAGE ══════════════ -->
+  <!-- POO -->
   <div class="page" id="page-poo">
-    <div class="viewer-banner hidden" id="viewerBannerPoo">👁 View-only mode — updates appear live.</div>
+    <div class="viewer-banner hidden" id="vbPoo">👁 View-only — updates appear live</div>
     <div class="summary-bar">
-      <div class="summary-card"><div class="num" id="pTotal">0</div><div class="lbl">💩 Total</div></div>
-      <div class="summary-card"><div class="num" id="pNormal">0</div><div class="lbl">🟡 Normal</div></div>
-      <div class="summary-card"><div class="num" id="pOther">0</div><div class="lbl">⚠️ Other</div></div>
+      <div class="sum-card"><div class="num" id="pCount" >0</div><div class="lbl">💩 Total</div></div>
+      <div class="sum-card"><div class="num" id="pNormal">0</div><div class="lbl">🟡 Normal</div></div>
+      <div class="sum-card"><div class="num" id="pOther" >0</div><div class="lbl">⚠️ Check</div></div>
     </div>
-    <div class="section-card">
+    <div class="card">
       <table>
-        <thead><tr><th style="width:130px">⏰ Time</th><th>💩 Color / Note</th><th id="pActionCol" style="width:44px"></th></tr></thead>
-        <tbody id="pooBody"></tbody>
+        <thead><tr>
+          <th style="width:130px">⏰ Time</th>
+          <th>💩 Color</th>
+          <th id="pDelCol" style="width:44px"></th>
+        </tr></thead>
+        <tbody id="pBody"></tbody>
       </table>
-      <div id="pEmpty" class="empty-state"><div class="e-icon">💩</div><p id="pEmptyMsg">No poo logged yet.</p></div>
+      <div class="empty hidden" id="pEmpty"><div class="ei">💩</div><p id="pEmptyMsg">No poo logged yet.</p></div>
     </div>
-    <div id="pEditorControls" class="hidden">
-      <button class="btn-add yellow" id="addPooBtn">＋ Log Poo</button>
-      <button class="btn-clear" id="clearPooBtn">🗑 Clear All Poo Logs</button>
+    <div id="pControls" class="hidden">
+      <button class="add-btn yellow-btn" id="addPooBtn">＋ Log Poo</button>
+      <button class="clear-btn"          id="clrPooBtn">🗑 Clear All Poo Logs</button>
     </div>
-    <div class="notes-section">
+    <div class="notes-box">
       <label>📝 Poo Notes</label>
-      <textarea id="pooNotes" placeholder="Consistency, concerns…" class="hidden"></textarea>
-      <div class="notes-ro hidden" id="pooNotesRo"></div>
+      <textarea id="pNotes"   placeholder="Consistency, concerns…" class="hidden"></textarea>
+      <div class="notes-ro hidden" id="pNotesRo"></div>
     </div>
   </div>
 
-  <!-- ══════════════ ANALYTICS PAGE ══════════════ -->
+  <!-- ANALYTICS -->
   <div class="page" id="page-analytics">
-    <div class="analytics-header">
+    <div class="analytics-hdr">
       <h2>📊 Weekly Analytics</h2>
       <p>Auto-generated from your logged data</p>
     </div>
-    <div class="week-selector">
+    <div class="week-nav">
       <button id="prevWeek">‹</button>
       <div id="weekLabel">This Week</div>
       <button id="nextWeek">›</button>
     </div>
     <div id="analyticsContent"></div>
   </div>
-
 </main>
 
 <footer>Made with 💕 for your little one</footer>
 <div id="toast"></div>
 
 <script>
-/* ═══════════════════════════════════════════════════════
-   🔧 CONFIG — replace with your real Firebase values
-═══════════════════════════════════════════════════════ */
-  const FIREBASE_CONFIG = {
+/* ═══════════════════════════════════════════
+   CONFIG — your Firebase values
+═══════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
     apiKey: "AIzaSyBg9nM_tO5XHnQ0grqJiOL3RqdqUEi5sk0",
     authDomain: "feeding-baby-9e070.firebaseapp.com",
     databaseURL: "https://feeding-baby-9e070-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "feeding-baby-9e070",
     storageBucket: "feeding-baby-9e070.firebasestorage.app",
     messagingSenderId: "430923431200",
-    appId: "1:430923431200:web:10b57cf89944a7878a2b45",
-  };
+    appId: "1:430923431200:web:10b57cf89944a7878a2b45"
+};
+const EDITOR_PIN = "1003"; // 🔒 change this
 
-  const EDITOR_PIN = "1003"; // 🔒 Change to your PIN
-
-/* ═══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    POO COLORS
-═══════════════════════════════════════════════════════ */
-  const POO_COLORS = [
-    { id:"mustard",  label:"Mustard",  hex:"#f5c518", normal:true  },
-    { id:"yellow",   label:"Yellow",   hex:"#ffe066", normal:true  },
-    { id:"brown",    label:"Brown",    hex:"#8B5e3c", normal:true  },
-    { id:"green",    label:"Green",    hex:"#5a9e3a", normal:false },
-    { id:"black",    label:"Black",    hex:"#222",    normal:false },
-    { id:"red",      label:"Red",      hex:"#e53935", normal:false },
-    { id:"white",    label:"White",    hex:"#ddd",    normal:false },
-  ];
+═══════════════════════════════════════════ */
+const POO_COLORS = [
+  {id:"mustard", label:"Mustard",    hex:"#f5c518", normal:true },
+  {id:"yellow",  label:"Yellow",     hex:"#ffe066", normal:true },
+  {id:"brown",   label:"Brown",      hex:"#8b5e3c", normal:true },
+  {id:"green",   label:"Green",      hex:"#5a9e3a", normal:false},
+  {id:"black",   label:"Black",      hex:"#333",    normal:false},
+  {id:"red",     label:"Red",        hex:"#e53935", normal:false},
+  {id:"white",   label:"White/Grey", hex:"#ccc",    normal:false},
+];
+const getPooColor = id => POO_COLORS.find(c=>c.id===id) || POO_COLORS[0];
 
-  function getPooColor(id) { return POO_COLORS.find(c => c.id === id) || POO_COLORS[0]; }
-
-/* ═══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    FIREBASE
-═══════════════════════════════════════════════════════ */
-  firebase.initializeApp(FIREBASE_CONFIG);
-  const db = firebase.database();
-  let dbListener = null;
+═══════════════════════════════════════════ */
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.database();
+let dbListener = null;
 
-  function dbPath(dateStr) { return `babyFoodie/${dateStr.replace(/-/g,"_")}`; }
+function dbPath(d){ return `babyFoodie/${d.replace(/-/g,"_")}`; }
 
-  function pushDayData() {
-    db.ref(dbPath(currentDate)).set({
-      feedings: { rows: currentFeedings, notes: currentFeedingNotes },
-      diapers:  { rows: currentDiapers,  notes: currentDiaperNotes  },
-      poos:     { rows: currentPoos,     notes: currentPooNotes      }
-    });
-  }
+function pushData(){
+  db.ref(dbPath(state.date)).set({
+    feedings:{ rows:state.feedings, notes:state.fNotes },
+    diapers: { rows:state.diapers,  notes:state.dNotes },
+    poos:    { rows:state.poos,     notes:state.pNotes }
+  });
+}
 
-  function subscribeToDate(dateStr) {
-    if (dbListener) { dbListener.off("value"); dbListener = null; }
-    const ref = db.ref(dbPath(dateStr));
-    ref.on("value", snap => {
-      const d = snap.val() || {};
-      currentFeedings     = Array.isArray(d.feedings?.rows)  ? d.feedings.rows  : [];
-      currentFeedingNotes = d.feedings?.notes || "";
-      currentDiapers      = Array.isArray(d.diapers?.rows)   ? d.diapers.rows   : [];
-      currentDiaperNotes  = d.diapers?.notes  || "";
-      currentPoos         = Array.isArray(d.poos?.rows)      ? d.poos.rows      : [];
-      currentPooNotes     = d.poos?.notes     || "";
-      renderAll();
-    });
-    dbListener = ref;
-  }
+function subscribe(dateStr){
+  if(dbListener){ dbListener.off("value"); dbListener=null; }
+  const ref = db.ref(dbPath(dateStr));
+  ref.on("value", snap=>{
+    const d = snap.val()||{};
+    state.feedings = Array.isArray(d.feedings?.rows) ? d.feedings.rows : [];
+    state.fNotes   = d.feedings?.notes || "";
+    state.diapers  = Array.isArray(d.diapers?.rows)  ? d.diapers.rows  : [];
+    state.dNotes   = d.diapers?.notes  || "";
+    state.poos     = Array.isArray(d.poos?.rows)      ? d.poos.rows     : [];
+    state.pNotes   = d.poos?.notes     || "";
+    renderAll();
+  });
+  dbListener = ref;
+}
 
-/* ═══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    STATE
-═══════════════════════════════════════════════════════ */
-  let currentDate         = todayKey();
-  let isEditor            = sessionStorage.getItem("bfRole") === "editor";
-  let activeTab           = "feeding";
+═══════════════════════════════════════════ */
+const state = {
+  date:"", tab:"feeding",
+  isEditor: sessionStorage.getItem("bfRole")==="editor",
+  feedings:[], fNotes:"",
+  diapers:[],  dNotes:"",
+  poos:[],     pNotes:"",
+  weekOffset:0,
+  tp:{ ctx:null, h:12, m:0, ap:"AM" }
+};
+state.date = todayKey();
 
-  let currentFeedings     = [];
-  let currentFeedingNotes = "";
-  let currentDiapers      = [];
-  let currentDiaperNotes  = "";
-  let currentPoos         = [];
-  let currentPooNotes     = "";
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+function offsetDate(d,n){ const dt=new Date(d+"T00:00:00"); dt.setDate(dt.getDate()+n); return dt.toISOString().slice(0,10); }
+function fmtLabel(d){
+  const t=todayKey();
+  if(d===t) return "Today";
+  if(d===offsetDate(t,-1)) return "Yesterday";
+  if(d===offsetDate(t, 1)) return "Tomorrow";
+  return new Date(d+"T00:00:00").toLocaleDateString(undefined,{weekday:"long"});
+}
+function fmtSub(d){ return new Date(d+"T00:00:00").toLocaleDateString(undefined,{day:"numeric",month:"long",year:"numeric"}); }
+function fmt12(t){
+  if(!t) return "—";
+  const [h,m]=t.split(":").map(Number);
+  return `${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`;
+}
+function parse24(t){
+  if(!t) return {h:12,m:0,ap:"AM"};
+  const [h,m]=t.split(":").map(Number);
+  return {h:h%12||12,m,ap:h<12?"AM":"PM"};
+}
+function to24(h,m,ap){
+  let hh=h%12; if(ap==="PM") hh+=12;
+  return `${String(hh).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+}
+function nowTime(){ const n=new Date(); return `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`; }
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
-  // Time picker
-  let tpContext = null; // { section, rowIndex }
-  let tpHour = 12, tpMinute = 0, tpAmpm = "AM";
+const EMOJI_MAP=[
+  [/milk|formula|breast|feed/i,"🍼"],[/rice|porridge|cereal|oat/i,"🍚"],
+  [/carrot/i,"🥕"],[/pumpkin|squash/i,"🎃"],[/apple/i,"🍎"],[/pear/i,"🍐"],
+  [/banana/i,"🍌"],[/mango/i,"🥭"],[/avocado/i,"🥑"],[/potato/i,"🥔"],
+  [/broccoli/i,"🥦"],[/pea/i,"🫛"],[/chicken/i,"🍗"],[/beef|meat/i,"🥩"],
+  [/fish|salmon/i,"🐟"],[/egg/i,"🥚"],[/yogurt/i,"🥛"],[/cheese/i,"🧀"],
+  [/bread|toast/i,"🍞"],[/pasta|noodle/i,"🍝"],[/soup/i,"🍲"],
+  [/puree|mash/i,"🥣"],[/water|juice|drink/i,"💧"],[/fruit/i,"🍓"],
+  [/veggie|vegetable/i,"🥗"],[/snack|puff|biscuit/i,"🍘"],
+];
+function foodEmoji(t){ if(!t) return "🥣"; for(const [re,em] of EMOJI_MAP) if(re.test(t)) return em; return "🥣"; }
 
-  // Analytics week
-  let analyticsWeekOffset = 0; // 0 = current week
+/* ═══════════════════════════════════════════
+   TAB SWITCHING  ← the fixed version
+═══════════════════════════════════════════ */
+function switchTab(tab){
+  state.tab = tab;
+  // buttons
+  document.querySelectorAll(".tab-btn").forEach(b=> b.classList.toggle("active", b.dataset.tab===tab));
+  // pages
+  document.querySelectorAll(".page").forEach(p=> p.classList.toggle("active", p.id==="page-"+tab));
+  // date nav — hide only on analytics
+  document.getElementById("dateNav").classList.toggle("hidden", tab==="analytics");
+  // scroll to top
+  window.scrollTo({top:0,behavior:"smooth"});
+  // analytics
+  if(tab==="analytics") renderAnalytics();
+}
 
-/* ═══════════════════════════════════════════════════════
-   DATE HELPERS
-═══════════════════════════════════════════════════════ */
-  function todayKey() { return new Date().toISOString().slice(0,10); }
-  function offsetDate(d, days) {
-    const dt = new Date(d + "T00:00:00");
-    dt.setDate(dt.getDate() + days);
-    return dt.toISOString().slice(0,10);
-  }
-  function formatDateLabel(d) {
-    const t = todayKey();
-    if (d === t)                return "Today";
-    if (d === offsetDate(t,-1)) return "Yesterday";
-    if (d === offsetDate(t, 1)) return "Tomorrow";
-    return new Date(d+"T00:00:00").toLocaleDateString(undefined,{weekday:"long"});
-  }
-  function formatDateSub(d) {
-    return new Date(d+"T00:00:00").toLocaleDateString(undefined,{day:"numeric",month:"long",year:"numeric"});
-  }
-  function fmt12(t) {
-    if (!t) return "—";
-    const [h,m] = t.split(":").map(Number);
-    return `${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`;
-  }
-  function parse24(t) {
-    if (!t) return {hour12:12,minute:0,ampm:"AM"};
-    const [h,m] = t.split(":").map(Number);
-    return {hour12:h%12||12, minute:m, ampm:h<12?"AM":"PM"};
-  }
-  function to24(h12,min,ampm) {
-    let h = h12%12; if(ampm==="PM") h+=12;
-    return `${String(h).padStart(2,"0")}:${String(min).padStart(2,"0")}`;
-  }
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=> switchTab(btn.dataset.tab));
+});
 
-/* ═══════════════════════════════════════════════════════
-   FOOD EMOJI
-═══════════════════════════════════════════════════════ */
-  const emojiMap = [
-    [/milk|formula|breast|feed/i,"🍼"],[/rice|porridge|cereal|oat/i,"🍚"],
-    [/carrot/i,"🥕"],[/pumpkin|squash/i,"🎃"],[/apple/i,"🍎"],
-    [/pear/i,"🍐"],[/banana/i,"🍌"],[/mango/i,"🥭"],[/avocado/i,"🥑"],
-    [/potato/i,"🥔"],[/broccoli/i,"🥦"],[/pea/i,"🫛"],
-    [/chicken/i,"🍗"],[/beef|meat/i,"🥩"],[/fish|salmon/i,"🐟"],
-    [/egg/i,"🥚"],[/yogurt/i,"🥛"],[/cheese/i,"🧀"],
-    [/bread|toast/i,"🍞"],[/pasta|noodle/i,"🍝"],[/soup/i,"🍲"],
-    [/puree|mash/i,"🥣"],[/water|juice|drink/i,"💧"],
-    [/fruit/i,"🍓"],[/veggie|vegetable/i,"🥗"],[/snack|puff|biscuit/i,"🍘"],
-  ];
-  function foodEmoji(t) {
-    if(!t) return "🥣";
-    for(const [re,em] of emojiMap) if(re.test(t)) return em;
-    return "🥣";
-  }
-  function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-
-/* ═══════════════════════════════════════════════════════
-   DIAPER TYPE LABEL
-═══════════════════════════════════════════════════════ */
-  function diaperLabel(type) {
-    if(type==="wet")  return '<span class="diaper-type-btn wet">💧 Wet</span>';
-    if(type==="poo")  return '<span class="diaper-type-btn poo">💩 Dirty</span>';
-    if(type==="both") return '<span class="diaper-type-btn both">💧💩 Both</span>';
-    return type || "—";
-  }
-
-/* ═══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    RENDER ALL
-═══════════════════════════════════════════════════════ */
-  function renderAll() {
-    updateDateDisplay();
-    updateRoleUI();
-    renderFeeding();
-    renderDiapers();
-    renderPoos();
-    if(activeTab === "analytics") renderAnalytics();
-  }
+═══════════════════════════════════════════ */
+function renderAll(){
+  renderDateNav();
+  renderRoleUI();
+  renderFeedings();
+  renderDiapers();
+  renderPoos();
+  // only re-render analytics if it's visible
+  if(state.tab==="analytics") renderAnalytics();
+}
 
-  function updateDateDisplay() {
-    document.getElementById("dateLabel").textContent    = formatDateLabel(currentDate);
-    document.getElementById("dateSubLabel").textContent = formatDateSub(currentDate);
-    document.getElementById("nextDay").disabled = currentDate >= todayKey();
-  }
+function renderDateNav(){
+  document.getElementById("dateLabel").textContent = fmtLabel(state.date);
+  document.getElementById("dateSub").textContent   = fmtSub(state.date);
+  document.getElementById("nextDay").disabled = state.date >= todayKey();
+}
 
-  function updateRoleUI() {
-    const label    = document.getElementById("roleLabel");
-    const controls = ["fEditorControls","dEditorControls","pEditorControls"];
-    const banners  = ["viewerBannerFeeding","viewerBannerDiaper","viewerBannerPoo"];
+function renderRoleUI(){
+  const ed = state.isEditor;
+  document.getElementById("roleLabel").textContent = ed ? "Editor ✏️" : "Viewer";
 
-    if(isEditor) {
-      label.textContent = "Editor ✏️";
-      controls.forEach(id => document.getElementById(id).classList.remove("hidden"));
-      banners.forEach(id  => document.getElementById(id).classList.add("hidden"));
-      // Show editor notes
-      ["feedingNotes","diaperNotes","pooNotes"].forEach(id => {
-        document.getElementById(id).classList.remove("hidden");
-        document.getElementById(id+"Ro").classList.add("hidden");
-      });
-      // Show delete col
-      ["fActionCol","dActionCol","pActionCol"].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.style.width = "44px";
-      });
+  // per-section controls & banners
+  [["f","Feeding"],["d","Diaper"],["p","Poo"]].forEach(([pfx,name])=>{
+    const ctrl = document.getElementById(pfx+"Controls");
+    const vb   = document.getElementById("vb"+name);
+    if(ctrl) ctrl.classList.toggle("hidden",!ed);
+    if(vb)   vb.classList.toggle("hidden",  ed);
+  });
+
+  // delete columns
+  ["fDelCol","dDelCol","pDelCol"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.width = ed?"44px":"0";
+  });
+
+  // notes
+  [["f","Feeding"],["d","Diaper"],["p","Poo"]].forEach(([pfx])=>{
+    const ta = document.getElementById(pfx+"Notes");
+    const ro = document.getElementById(pfx+"NotesRo");
+    const val= pfx==="f"?state.fNotes:pfx==="d"?state.dNotes:state.pNotes;
+    if(ta){ ta.classList.toggle("hidden",!ed); ta.value = val; }
+    if(ro){ ro.classList.toggle("hidden", ed); ro.textContent = val||"No notes."; }
+  });
+}
+
+/* ─── FEEDINGS ─── */
+function renderFeedings(){
+  const rows=state.feedings, tbody=document.getElementById("fBody"), empty=document.getElementById("fEmpty");
+  tbody.innerHTML="";
+  const times=rows.map(r=>r.time).filter(Boolean).sort();
+  document.getElementById("fCount").textContent = rows.length;
+  document.getElementById("fFirst").textContent = times.length?fmt12(times[0]):"—";
+  document.getElementById("fLast").textContent  = times.length?fmt12(times[times.length-1]):"—";
+
+  if(!rows.length){ empty.classList.remove("hidden"); document.getElementById("fEmptyMsg").textContent=state.isEditor?"Tap + to add a feeding!":"No feedings logged yet."; return; }
+  empty.classList.add("hidden");
+
+  rows.forEach((row,i)=>{
+    const tr=document.createElement("tr");
+    if(state.isEditor){
+      tr.innerHTML=`
+        <td><div class="time-wrap">
+          <button class="time-btn" data-s="f" data-i="${i}">${fmt12(row.time)}</button>
+          <button class="clock-btn" data-s="f" data-i="${i}">🕐</button>
+        </div></td>
+        <td><div class="food-wrap">
+          <span class="food-emoji">${foodEmoji(row.food)}</span>
+          <input type="text" value="${esc(row.food)}" data-s="f" data-i="${i}" placeholder="e.g. Banana purée…"/>
+        </div></td>
+        <td><button class="del-btn" data-s="f" data-i="${i}">🗑</button></td>`;
     } else {
-      label.textContent = "Viewer";
-      controls.forEach(id => document.getElementById(id).classList.add("hidden"));
-      banners.forEach(id  => document.getElementById(id).classList.remove("hidden"));
-      ["feedingNotes","diaperNotes","pooNotes"].forEach(id => {
-        document.getElementById(id).classList.add("hidden");
-        document.getElementById(id+"Ro").classList.remove("hidden");
-      });
-      ["fActionCol","dActionCol","pActionCol"].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.style.width = "0";
-      });
+      tr.innerHTML=`
+        <td><div class="cell-ro t">${fmt12(row.time)}</div></td>
+        <td><div class="food-wrap"><span class="food-emoji">${foodEmoji(row.food)}</span><div class="cell-ro">${esc(row.food)||"<em style='opacity:.5'>—</em>"}</div></div></td>
+        <td></td>`;
     }
-    // Sync notes values
-    document.getElementById("feedingNotes").value    = currentFeedingNotes;
-    document.getElementById("diaperNotes").value     = currentDiaperNotes;
-    document.getElementById("pooNotes").value        = currentPooNotes;
-    document.getElementById("feedingNotesRo").textContent = currentFeedingNotes || "No notes.";
-    document.getElementById("diaperNotesRo").textContent  = currentDiaperNotes  || "No notes.";
-    document.getElementById("pooNotesRo").textContent     = currentPooNotes     || "No notes.";
-  }
-
-/* ─── FEEDING ─── */
-  function renderFeeding() {
-    const tbody = document.getElementById("feedingBody");
-    const empty = document.getElementById("fEmpty");
-    tbody.innerHTML = "";
-    document.getElementById("fMealCount").textContent = currentFeedings.length;
-    const times = currentFeedings.map(r=>r.time).filter(Boolean).sort();
-    document.getElementById("fFirst").textContent = times.length ? fmt12(times[0])              : "—";
-    document.getElementById("fLast").textContent  = times.length ? fmt12(times[times.length-1]) : "—";
-
-    if(!currentFeedings.length){ empty.style.display="block"; document.getElementById("fEmptyMsg").textContent = isEditor?"No feedings yet. Tap + to add!":"No feedings logged yet."; return; }
-    empty.style.display = "none";
-    currentFeedings.forEach((row,i) => {
-      const tr = document.createElement("tr");
-      if(isEditor){
-        tr.innerHTML=`
-          <td><div class="time-cell-wrap">
-            <button class="time-display-btn" data-section="feeding" data-i="${i}">${fmt12(row.time)}</button>
-            <button class="btn-clock" data-section="feeding" data-i="${i}">🕐</button>
-          </div></td>
-          <td><div class="food-wrap">
-            <span class="food-emoji">${foodEmoji(row.food)}</span>
-            <input type="text" value="${esc(row.food)}" data-section="feeding" data-i="${i}" placeholder="e.g. Banana purée…"/>
-          </div></td>
-          <td><button class="btn-del" data-section="feeding" data-i="${i}">🗑</button></td>`;
-      } else {
-        tr.innerHTML=`
-          <td><div class="cell-ro time">${fmt12(row.time)}</div></td>
-          <td><div class="food-wrap"><span class="food-emoji">${foodEmoji(row.food)}</span><div class="cell-ro">${esc(row.food)||"<em style='opacity:.5'>—</em>"}</div></div></td>
-          <td></td>`;
-      }
-      tbody.appendChild(tr);
-    });
-  }
+    tbody.appendChild(tr);
+  });
+}
 
 /* ─── DIAPERS ─── */
-  function renderDiapers() {
-    const tbody = document.getElementById("diaperBody");
-    const empty = document.getElementById("dEmpty");
-    tbody.innerHTML = "";
-    const wet   = currentDiapers.filter(r=>r.type==="wet"||r.type==="both").length;
-    const dirty = currentDiapers.filter(r=>r.type==="poo"||r.type==="both").length;
-    document.getElementById("dTotal").textContent = currentDiapers.length;
-    document.getElementById("dWet").textContent   = wet;
-    document.getElementById("dDirty").textContent = dirty;
+function renderDiapers(){
+  const rows=state.diapers, tbody=document.getElementById("dBody"), empty=document.getElementById("dEmpty");
+  tbody.innerHTML="";
+  const wet  =rows.filter(r=>r.type==="wet" ||r.type==="both").length;
+  const dirty=rows.filter(r=>r.type==="poo" ||r.type==="both").length;
+  document.getElementById("dCount").textContent=rows.length;
+  document.getElementById("dWet"  ).textContent=wet;
+  document.getElementById("dDirty").textContent=dirty;
 
-    if(!currentDiapers.length){ empty.style.display="block"; document.getElementById("dEmptyMsg").textContent = isEditor?"No diaper changes yet. Tap + to add!":"No diaper changes logged."; return; }
-    empty.style.display="none";
-    currentDiapers.forEach((row,i) => {
-      const tr = document.createElement("tr");
-      if(isEditor){
-        tr.innerHTML=`
-          <td><div class="time-cell-wrap">
-            <button class="time-display-btn" data-section="diaper" data-i="${i}">${fmt12(row.time)}</button>
-            <button class="btn-clock" data-section="diaper" data-i="${i}">🕐</button>
-          </div></td>
-          <td>
-            <div class="dtype-selector" data-i="${i}">
-              <button class="dtype-opt wet  ${row.type==='wet' ?'selected':''}" data-section="diaper" data-i="${i}" data-type="wet">💧 Wet</button>
-              <button class="dtype-opt poo  ${row.type==='poo' ?'selected':''}" data-section="diaper" data-i="${i}" data-type="poo">💩 Dirty</button>
-              <button class="dtype-opt both ${row.type==='both'?'selected':''}" data-section="diaper" data-i="${i}" data-type="both">💧💩 Both</button>
-            </div>
-          </td>
-          <td><button class="btn-del" data-section="diaper" data-i="${i}">🗑</button></td>`;
-      } else {
-        tr.innerHTML=`
-          <td><div class="cell-ro time">${fmt12(row.time)}</div></td>
-          <td><div class="cell-ro">${diaperLabel(row.type)}</div></td>
-          <td></td>`;
-      }
-      tbody.appendChild(tr);
-    });
-  }
+  if(!rows.length){ empty.classList.remove("hidden"); document.getElementById("dEmptyMsg").textContent=state.isEditor?"Tap + to log a change!":"No diaper changes yet."; return; }
+  empty.classList.add("hidden");
+
+  rows.forEach((row,i)=>{
+    const tr=document.createElement("tr");
+    if(state.isEditor){
+      tr.innerHTML=`
+        <td><div class="time-wrap">
+          <button class="time-btn" data-s="d" data-i="${i}">${fmt12(row.time)}</button>
+          <button class="clock-btn" data-s="d" data-i="${i}">🕐</button>
+        </div></td>
+        <td><div class="dtype-wrap">
+          <button class="dtype-btn wet  ${row.type==="wet" ?"sel":""}" data-s="d" data-i="${i}" data-t="wet">💧 Wet</button>
+          <button class="dtype-btn poo  ${row.type==="poo" ?"sel":""}" data-s="d" data-i="${i}" data-t="poo">💩 Dirty</button>
+          <button class="dtype-btn both ${row.type==="both"?"sel":""}" data-s="d" data-i="${i}" data-t="both">💧💩 Both</button>
+        </div></td>
+        <td><button class="del-btn" data-s="d" data-i="${i}">🗑</button></td>`;
+    } else {
+      const lbl=row.type==="wet"?"💧 Wet":row.type==="poo"?"💩 Dirty":"💧💩 Both";
+      tr.innerHTML=`
+        <td><div class="cell-ro t">${fmt12(row.time)}</div></td>
+        <td><div class="cell-ro">${lbl||"—"}</div></td>
+        <td></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+}
 
 /* ─── POOS ─── */
-  function renderPoos() {
-    const tbody = document.getElementById("pooBody");
-    const empty = document.getElementById("pEmpty");
-    tbody.innerHTML = "";
-    const normal = currentPoos.filter(r => getPooColor(r.color).normal).length;
-    document.getElementById("pTotal").textContent  = currentPoos.length;
-    document.getElementById("pNormal").textContent = normal;
-    document.getElementById("pOther").textContent  = currentPoos.length - normal;
+function renderPoos(){
+  const rows=state.poos, tbody=document.getElementById("pBody"), empty=document.getElementById("pEmpty");
+  tbody.innerHTML="";
+  const normal=rows.filter(r=>getPooColor(r.color).normal).length;
+  document.getElementById("pCount" ).textContent=rows.length;
+  document.getElementById("pNormal").textContent=normal;
+  document.getElementById("pOther" ).textContent=rows.length-normal;
 
-    if(!currentPoos.length){ empty.style.display="block"; document.getElementById("pEmptyMsg").textContent = isEditor?"No poo logged yet. Tap + to add!":"No poo logged yet."; return; }
-    empty.style.display="none";
-    currentPoos.forEach((row,i) => {
-      const col = getPooColor(row.color);
-      const tr = document.createElement("tr");
-      if(isEditor){
-        const colorSwatches = POO_COLORS.map(c =>
-          `<button class="pcolor-opt ${row.color===c.id?'selected':''}" data-section="poo" data-i="${i}" data-color="${c.id}" style="background:${c.hex}" title="${c.label}"></button>`
-        ).join("");
-        tr.innerHTML=`
-          <td><div class="time-cell-wrap">
-            <button class="time-display-btn" data-section="poo" data-i="${i}">${fmt12(row.time)}</button>
-            <button class="btn-clock" data-section="poo" data-i="${i}">🕐</button>
-          </div></td>
-          <td>
-            <div class="pcolor-selector">
-              <span class="pcolor-label">Color:</span>
-              ${colorSwatches}
-            </div>
-            <div style="padding:0 12px 6px;display:flex;align-items:center;gap:6px">
-              <span style="font-size:.8rem;font-weight:700;color:${col.hex};text-shadow:0 0 2px #0003">● ${col.label}</span>
-              ${col.normal?'<span style="font-size:.7rem;color:var(--mint-dark);font-weight:700">✓ Normal</span>':'<span style="font-size:.7rem;color:#e57373;font-weight:700">⚠️ Check</span>'}
-            </div>
-          </td>
-          <td><button class="btn-del" data-section="poo" data-i="${i}">🗑</button></td>`;
-      } else {
-        tr.innerHTML=`
-          <td><div class="cell-ro time">${fmt12(row.time)}</div></td>
-          <td><div class="cell-ro" style="display:flex;align-items:center;gap:8px">
-            <span style="width:18px;height:18px;border-radius:50%;background:${col.hex};display:inline-block;border:2px solid #0002"></span>
-            <span>${col.label} ${col.normal?'✓':'⚠️'}</span>
-          </div></td>
-          <td></td>`;
-      }
-      tbody.appendChild(tr);
-    });
-  }
+  if(!rows.length){ empty.classList.remove("hidden"); document.getElementById("pEmptyMsg").textContent=state.isEditor?"Tap + to log poo!":"No poo logged yet."; return; }
+  empty.classList.add("hidden");
 
-/* ═══════════════════════════════════════════════════════
-   📊 ANALYTICS
-═══════════════════════════════════════════════════════ */
-  function getWeekDates(offsetWeeks) {
-    // Monday-based week
-    const today = new Date();
-    const day   = today.getDay(); // 0=Sun
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + offsetWeeks * 7);
-    const days = [];
-    for(let i=0;i<7;i++){
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      days.push(d.toISOString().slice(0,10));
+  rows.forEach((row,i)=>{
+    const col=getPooColor(row.color);
+    const tr=document.createElement("tr");
+    if(state.isEditor){
+      const swatches=POO_COLORS.map(c=>`<button class="swatch${row.color===c.id?" sel":""}" data-s="p" data-i="${i}" data-c="${c.id}" style="background:${c.hex}" title="${c.label}"></button>`).join("");
+      tr.innerHTML=`
+        <td style="vertical-align:top;padding-top:10px"><div class="time-wrap">
+          <button class="time-btn" data-s="p" data-i="${i}">${fmt12(row.time)}</button>
+          <button class="clock-btn" data-s="p" data-i="${i}">🕐</button>
+        </div></td>
+        <td><div class="poo-wrap">
+          <div class="poo-label">Color:</div>
+          <div class="poo-swatches">${swatches}</div>
+          <div class="poo-tag"><span style="width:14px;height:14px;border-radius:50%;background:${col.hex};display:inline-block;border:1px solid #0002"></span>${col.label} ${col.normal?"<span style='color:var(--green-dark)'>✓ Normal</span>":"<span style='color:#e57373'>⚠️ Check</span>"}</div>
+        </div></td>
+        <td style="vertical-align:top;padding-top:10px"><button class="del-btn" data-s="p" data-i="${i}">🗑</button></td>`;
+    } else {
+      tr.innerHTML=`
+        <td><div class="cell-ro t">${fmt12(row.time)}</div></td>
+        <td><div class="cell-ro" style="display:flex;align-items:center;gap:7px">
+          <span style="width:16px;height:16px;border-radius:50%;background:${col.hex};display:inline-block;border:1px solid #0002;flex-shrink:0"></span>
+          ${col.label} ${col.normal?"✓":"⚠️"}
+        </div></td>
+        <td></td>`;
     }
-    return days;
-  }
-
-  async function renderAnalytics() {
-    const container = document.getElementById("analyticsContent");
-    container.innerHTML = `<div class="no-data"><div class="spinner" style="margin:0 auto"></div><p style="margin-top:12px">Loading analytics…</p></div>`;
-
-    const days = getWeekDates(analyticsWeekOffset);
-    const start = days[0], end = days[6];
-
-    // Week label
-    const fmtShort = d => new Date(d+"T00:00:00").toLocaleDateString(undefined,{day:"numeric",month:"short"});
-    document.getElementById("weekLabel").textContent = `${fmtShort(start)} – ${fmtShort(end)}`;
-
-    // Disable next week if it's in the future
-    const todayWeek = getWeekDates(0);
-    document.getElementById("nextWeek").disabled = end >= todayWeek[6];
-
-    // Fetch all 7 days from Firebase
-    const dayLabels = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-    const dayData   = await Promise.all(days.map(async d => {
-      const snap = await db.ref(dbPath(d)).get();
-      const val  = snap.val() || {};
-      return {
-        date:     d,
-        feedings: Array.isArray(val.feedings?.rows) ? val.feedings.rows : [],
-        diapers:  Array.isArray(val.diapers?.rows)  ? val.diapers.rows  : [],
-        poos:     Array.isArray(val.poos?.rows)      ? val.poos.rows     : [],
-      };
-    }));
-
-    const totalMeals    = dayData.reduce((s,d)=>s+d.feedings.length, 0);
-    const totalDiapers  = dayData.reduce((s,d)=>s+d.diapers.length,  0);
-    const totalPoos     = dayData.reduce((s,d)=>s+d.poos.length,      0);
-    const avgMeals      = totalMeals   ? (totalMeals   / 7).toFixed(1) : "—";
-    const avgDiapers    = totalDiapers ? (totalDiapers / 7).toFixed(1) : "—";
-
-    // First/last feed avg
-    const firstTimes = dayData.flatMap(d => d.feedings.map(r=>r.time).filter(Boolean).sort()).slice(0,7);
-    const avgFirst   = avgTime(dayData.map(d => d.feedings.map(r=>r.time).filter(Boolean).sort()[0]).filter(Boolean));
-    const avgLast    = avgTime(dayData.map(d => { const t=d.feedings.map(r=>r.time).filter(Boolean).sort(); return t[t.length-1]; }).filter(Boolean));
-
-    // Top foods
-    const foodCount = {};
-    dayData.flatMap(d=>d.feedings).forEach(r => {
-      if(!r.food) return;
-      const k = r.food.trim().toLowerCase();
-      foodCount[k] = (foodCount[k]||0)+1;
-    });
-    const topFoods = Object.entries(foodCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-    // Poo colors
-    const pooColorCount = {};
-    dayData.flatMap(d=>d.poos).forEach(r => {
-      const c = r.color||"mustard";
-      pooColorCount[c] = (pooColorCount[c]||0)+1;
-    });
-
-    // Diaper breakdown
-    const wetCount  = dayData.flatMap(d=>d.diapers).filter(r=>r.type==="wet"||r.type==="both").length;
-    const dirtyCount= dayData.flatMap(d=>d.diapers).filter(r=>r.type==="poo"||r.type==="both").length;
-
-    // Max for bar chart scaling
-    const maxMeals   = Math.max(...dayData.map(d=>d.feedings.length), 1);
-    const maxDiapers = Math.max(...dayData.map(d=>d.diapers.length),  1);
-    const maxPoos    = Math.max(...dayData.map(d=>d.poos.length),     1);
-    const barMax     = Math.max(maxMeals, maxDiapers, maxPoos);
-
-    container.innerHTML = `
-      <!-- KPI Grid -->
-      <div class="analytics-grid">
-        <div class="analytics-card">
-          <div class="a-icon">🍽</div>
-          <div class="a-val">${totalMeals}</div>
-          <div class="a-lbl">Total Meals</div>
-        </div>
-        <div class="analytics-card">
-          <div class="a-icon">📈</div>
-          <div class="a-val">${avgMeals}</div>
-          <div class="a-lbl">Avg Meals/Day</div>
-        </div>
-        <div class="analytics-card green">
-          <div class="a-icon">👶</div>
-          <div class="a-val">${totalDiapers}</div>
-          <div class="a-lbl">Total Diapers</div>
-        </div>
-        <div class="analytics-card green">
-          <div class="a-icon">📊</div>
-          <div class="a-val">${avgDiapers}</div>
-          <div class="a-lbl">Avg Diapers/Day</div>
-        </div>
-        <div class="analytics-card yellow">
-          <div class="a-icon">💩</div>
-          <div class="a-val">${totalPoos}</div>
-          <div class="a-lbl">Total Poos</div>
-        </div>
-        <div class="analytics-card yellow">
-          <div class="a-icon">💧</div>
-          <div class="a-val">${wetCount}</div>
-          <div class="a-lbl">Wet Diapers</div>
-        </div>
-        <div class="analytics-card full">
-          <div class="a-icon">🌅</div>
-          <div class="a-val" style="font-size:1.1rem">${avgFirst} → ${avgLast}</div>
-          <div class="a-lbl">Avg First → Last Feed</div>
-        </div>
-      </div>
-
-      <!-- Daily Bar Chart -->
-      <div class="section-card" style="padding:14px">
-        <div class="section-title" style="margin-bottom:12px">📅 Daily Breakdown</div>
-        <div class="bar-chart">
-          ${dayData.map((d,i) => `
-            <div class="bar-chart-row">
-              <div class="bar-label">${dayLabels[i]}</div>
-              <div style="flex:1;display:flex;flex-direction:column;gap:3px">
-                <div class="bar-track" title="Meals: ${d.feedings.length}">
-                  <div class="bar-fill meals" style="width:${d.feedings.length?Math.max((d.feedings.length/barMax)*100,8):0}%">
-                    ${d.feedings.length||""}
-                  </div>
-                </div>
-                <div class="bar-track" style="background:#dbeafe" title="Diapers: ${d.diapers.length}">
-                  <div class="bar-fill diapers" style="width:${d.diapers.length?Math.max((d.diapers.length/barMax)*100,8):0}%">
-                    ${d.diapers.length||""}
-                  </div>
-                </div>
-                <div class="bar-track" style="background:#fef9c3" title="Poos: ${d.poos.length}">
-                  <div class="bar-fill poos" style="width:${d.poos.length?Math.max((d.poos.length/barMax)*100,8):0}%">
-                    ${d.poos.length||""}
-                  </div>
-                </div>
-              </div>
-            </div>
-          `).join("")}
-          <div style="display:flex;gap:12px;margin-top:8px;font-size:.68rem;font-weight:700;color:var(--subtext)">
-            <span>🟥 Meals</span><span>🟦 Diapers</span><span>🟨 Poos</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Top Foods -->
-      <div class="section-card" style="padding:14px">
-        <div class="section-title">🥣 Top Foods This Week</div>
-        ${topFoods.length ? `
-          <div class="food-freq-list">
-            ${topFoods.map(([food,count]) => `
-              <div class="food-freq-item">
-                <span>${foodEmoji(food)}</span>
-                <span style="text-transform:capitalize">${esc(food)}</span>
-                <span class="food-freq-count">${count}×</span>
-              </div>`).join("")}
-          </div>` : `<div class="no-data">No food data logged yet.</div>`}
-      </div>
-
-      <!-- Poo Colors -->
-      <div class="section-card" style="padding:14px;margin-bottom:20px">
-        <div class="section-title">💩 Poo Color Breakdown</div>
-        ${Object.keys(pooColorCount).length ? `
-          <div class="food-freq-list">
-            ${Object.entries(pooColorCount).sort((a,b)=>b[1]-a[1]).map(([id,count]) => {
-              const col = getPooColor(id);
-              return `<div class="food-freq-item">
-                <span style="width:16px;height:16px;border-radius:50%;background:${col.hex};display:inline-block;border:1px solid #0002;flex-shrink:0"></span>
-                <span>${col.label} ${col.normal?"✓":"⚠️"}</span>
-                <span class="food-freq-count">${count}×</span>
-              </div>`;
-            }).join("")}
-          </div>` : `<div class="no-data">No poo data logged yet.</div>`}
-      </div>
-    `;
-  }
-
-  function avgTime(times24) {
-    if(!times24.length) return "—";
-    const mins = times24.map(t => { const [h,m]=t.split(":").map(Number); return h*60+m; });
-    const avg  = Math.round(mins.reduce((a,b)=>a+b,0)/mins.length);
-    const h=Math.floor(avg/60), m=avg%60;
-    return fmt12(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);
-  }
-
-/* ═══════════════════════════════════════════════════════
-   TIME PICKER
-═══════════════════════════════════════════════════════ */
-  function buildDrum(containerId, items, selectedValue, onSelect) {
-    const el = document.getElementById(containerId);
-    el.innerHTML = "";
-    const tg = document.createElement("div"); tg.className="ghost"; el.appendChild(tg);
-    items.forEach(val => {
-      const item = document.createElement("div");
-      item.className = "tp-drum-item" + (val===selectedValue?" selected":"");
-      item.textContent = String(val).padStart(2,"0");
-      item.addEventListener("click", () => {
-        el.querySelectorAll(".tp-drum-item").forEach(x=>x.classList.remove("selected"));
-        item.classList.add("selected"); onSelect(val); updateTpPreview();
-      });
-      el.appendChild(item);
-    });
-    const bg = document.createElement("div"); bg.className="ghost"; el.appendChild(bg);
-    setTimeout(() => {
-      const sel = el.querySelector(".selected");
-      if(sel) el.scrollTop = sel.offsetTop - el.clientHeight/2 + sel.clientHeight/2;
-    }, 50);
-    let t;
-    el.addEventListener("scroll", () => {
-      clearTimeout(t);
-      t = setTimeout(() => snapDrum(el, onSelect), 120);
-    });
-  }
-
-  function snapDrum(el, onSelect) {
-    const items  = el.querySelectorAll(".tp-drum-item");
-    const center = el.scrollTop + el.clientHeight/2;
-    let closest=null, dist=Infinity;
-    items.forEach(item => {
-      const d = Math.abs(item.offsetTop + item.clientHeight/2 - center);
-      if(d<dist){ dist=d; closest=item; }
-    });
-    if(closest){
-      el.querySelectorAll(".tp-drum-item").forEach(x=>x.classList.remove("selected"));
-      closest.classList.add("selected");
-      el.scrollTo({top:closest.offsetTop-el.clientHeight/2+closest.clientHeight/2, behavior:"smooth"});
-      onSelect(parseInt(closest.textContent)); updateTpPreview();
-    }
-  }
-
-  function updateTpPreview() {
-    document.getElementById("tpPreviewH").textContent    = String(tpHour).padStart(2,"0");
-    document.getElementById("tpPreviewM").textContent    = String(tpMinute).padStart(2,"0");
-    document.getElementById("tpPreviewAMPM").textContent = tpAmpm;
-  }
-
-  function openTimePicker(section, rowIndex) {
-    tpContext = {section, rowIndex};
-    const rows = section==="feeding"?currentFeedings:section==="diaper"?currentDiapers:currentPoos;
-    const p    = parse24(rows[rowIndex]?.time);
-    tpHour=p.hour12; tpMinute=p.minute; tpAmpm=p.ampm;
-    buildDrum("drumHour", Array.from({length:12},(_,i)=>i+1), tpHour, v=>{tpHour=v;});
-    buildDrum("drumMin",  Array.from({length:60},(_,i)=>i),   tpMinute, v=>{tpMinute=v;});
-    setAmpm(tpAmpm); updateTpPreview();
-    document.getElementById("timePickerModal").classList.remove("hidden");
-  }
-
-  function closeTimePicker() { document.getElementById("timePickerModal").classList.add("hidden"); tpContext=null; }
-
-  function setAmpm(v) {
-    tpAmpm=v;
-    document.getElementById("btnAM").classList.toggle("active",v==="AM");
-    document.getElementById("btnPM").classList.toggle("active",v==="PM");
-    updateTpPreview();
-  }
-
-  document.getElementById("btnAM").addEventListener("click", ()=>setAmpm("AM"));
-  document.getElementById("btnPM").addEventListener("click", ()=>setAmpm("PM"));
-  document.getElementById("tpCancel").addEventListener("click", closeTimePicker);
-  document.getElementById("timePickerModal").addEventListener("click", e=>{
-    if(e.target===document.getElementById("timePickerModal")) closeTimePicker();
+    tbody.appendChild(tr);
   });
+}
 
-  document.getElementById("tpConfirm").addEventListener("click", ()=>{
-    if(!tpContext) return;
-    const time24 = to24(tpHour, tpMinute, tpAmpm);
-    const {section, rowIndex} = tpContext;
-    if(section==="feeding")  { currentFeedings[rowIndex].time = time24; }
-    if(section==="diaper")   { currentDiapers[rowIndex].time  = time24; }
-    if(section==="poo")      { currentPoos[rowIndex].time     = time24; }
-    pushDayData();
-    showToast(`Time set to ${fmt12(time24)} ✅`);
-    closeTimePicker();
-  });
-
-/* ═══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    TABLE EVENTS (delegated)
-═══════════════════════════════════════════════════════ */
-  // All tables
-  ["feedingBody","diaperBody","pooBody"].forEach(id => {
-    document.getElementById(id).addEventListener("click", e => {
-      if(!isEditor) return;
+═══════════════════════════════════════════ */
+["fBody","dBody","pBody"].forEach(id=>{
+  document.getElementById(id).addEventListener("click",e=>{
+    if(!state.isEditor) return;
 
-      // Time picker open
-      const timeBtn  = e.target.closest(".time-display-btn");
-      const clockBtn = e.target.closest(".btn-clock");
-      if(timeBtn||clockBtn) {
-        const btn = timeBtn||clockBtn;
-        openTimePicker(btn.dataset.section, parseInt(btn.dataset.i));
-        return;
-      }
+    // time picker
+    const tb = e.target.closest(".time-btn, .clock-btn");
+    if(tb){ openTP(tb.dataset.s, parseInt(tb.dataset.i)); return; }
 
-      // Delete
-      const delBtn = e.target.closest(".btn-del");
-      if(delBtn) {
-        const i = parseInt(delBtn.dataset.i);
-        const s = delBtn.dataset.section;
-        if(s==="feeding") currentFeedings.splice(i,1);
-        if(s==="diaper")  currentDiapers.splice(i,1);
-        if(s==="poo")     currentPoos.splice(i,1);
-        pushDayData(); showToast("Entry removed 🗑");
-        return;
-      }
+    // delete
+    const db2 = e.target.closest(".del-btn");
+    if(db2){
+      const s=db2.dataset.s, i=parseInt(db2.dataset.i);
+      if(s==="f") state.feedings.splice(i,1);
+      if(s==="d") state.diapers.splice(i,1);
+      if(s==="p") state.poos.splice(i,1);
+      pushData(); showToast("Entry removed 🗑"); return;
+    }
 
-      // Diaper type select
-      const dtBtn = e.target.closest(".dtype-opt");
-      if(dtBtn) {
-        const i = parseInt(dtBtn.dataset.i);
-        currentDiapers[i].type = dtBtn.dataset.type;
-        pushDayData();
-        return;
-      }
+    // diaper type
+    const dt = e.target.closest(".dtype-btn");
+    if(dt){ state.diapers[parseInt(dt.dataset.i)].type=dt.dataset.t; pushData(); return; }
 
-      // Poo color select
-      const pcBtn = e.target.closest(".pcolor-opt");
-      if(pcBtn) {
-        const i = parseInt(pcBtn.dataset.i);
-        currentPoos[i].color = pcBtn.dataset.color;
-        pushDayData();
-        return;
-      }
-    });
+    // poo swatch
+    const sw = e.target.closest(".swatch");
+    if(sw){ state.poos[parseInt(sw.dataset.i)].color=sw.dataset.c; pushData(); return; }
   });
+});
 
-  // Food text input debounce
-  let foodDebounce;
-  document.getElementById("feedingBody").addEventListener("input", e => {
-    if(!isEditor) return;
-    const el = e.target;
-    if(el.tagName!=="INPUT") return;
-    const wrap = el.closest(".food-wrap");
-    if(wrap) wrap.querySelector(".food-emoji").textContent = foodEmoji(el.value);
-    clearTimeout(foodDebounce);
-    foodDebounce = setTimeout(() => {
-      currentFeedings[parseInt(el.dataset.i)].food = el.value;
-      pushDayData();
-    }, 600);
-  });
+// food input debounce
+let foodT;
+document.getElementById("fBody").addEventListener("input",e=>{
+  if(!state.isEditor) return;
+  const el=e.target;
+  if(el.tagName!=="INPUT") return;
+  const wrap=el.closest(".food-wrap");
+  if(wrap) wrap.querySelector(".food-emoji").textContent=foodEmoji(el.value);
+  clearTimeout(foodT);
+  foodT=setTimeout(()=>{ state.feedings[parseInt(el.dataset.i)].food=el.value; pushData(); },600);
+});
 
-/* ═══════════════════════════════════════════════════════
-   ADD BUTTONS
-═══════════════════════════════════════════════════════ */
-  function nowTime() {
-    const n=new Date();
-    return `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
-  }
+/* ═══════════════════════════════════════════
+   ADD / CLEAR BUTTONS
+═══════════════════════════════════════════ */
+document.getElementById("addFeedBtn").addEventListener("click",()=>{
+  state.feedings.push({time:nowTime(),food:""});
+  pushData(); setTimeout(()=>openTP("f",state.feedings.length-1),400);
+});
+document.getElementById("addDiapBtn").addEventListener("click",()=>{
+  state.diapers.push({time:nowTime(),type:"wet"});
+  pushData(); setTimeout(()=>openTP("d",state.diapers.length-1),400);
+});
+document.getElementById("addPooBtn").addEventListener("click",()=>{
+  state.poos.push({time:nowTime(),color:"mustard"});
+  pushData(); setTimeout(()=>openTP("p",state.poos.length-1),400);
+});
 
-  document.getElementById("addFeedingBtn").addEventListener("click", () => {
-    currentFeedings.push({time:nowTime(), food:""});
-    pushDayData();
-    setTimeout(()=>openTimePicker("feeding", currentFeedings.length-1), 400);
-  });
+document.getElementById("clrFeedBtn").addEventListener("click",()=>{
+  if(!state.feedings.length){showToast("Nothing to clear");return;}
+  if(confirm("Clear all feedings for today?")){ state.feedings=[];state.fNotes="";pushData();showToast("Feedings cleared ✅"); }
+});
+document.getElementById("clrDiapBtn").addEventListener("click",()=>{
+  if(!state.diapers.length){showToast("Nothing to clear");return;}
+  if(confirm("Clear all diaper changes for today?")){ state.diapers=[];state.dNotes="";pushData();showToast("Diapers cleared ✅"); }
+});
+document.getElementById("clrPooBtn").addEventListener("click",()=>{
+  if(!state.poos.length){showToast("Nothing to clear");return;}
+  if(confirm("Clear all poo logs for today?")){ state.poos=[];state.pNotes="";pushData();showToast("Poo logs cleared ✅"); }
+});
 
-  document.getElementById("addDiaperBtn").addEventListener("click", () => {
-    currentDiapers.push({time:nowTime(), type:"wet"});
-    pushDayData();
-    setTimeout(()=>openTimePicker("diaper", currentDiapers.length-1), 400);
-  });
+/* ═══════════════════════════════════════════
+   NOTES
+═══════════════════════════════════════════ */
+let notesT;
+document.getElementById("fNotes").addEventListener("input",e=>{ state.fNotes=e.target.value; clearTimeout(notesT); notesT=setTimeout(pushData,700); });
+document.getElementById("dNotes").addEventListener("input",e=>{ state.dNotes=e.target.value; clearTimeout(notesT); notesT=setTimeout(pushData,700); });
+document.getElementById("pNotes").addEventListener("input",e=>{ state.pNotes=e.target.value; clearTimeout(notesT); notesT=setTimeout(pushData,700); });
 
-  document.getElementById("addPooBtn").addEventListener("click", () => {
-    currentPoos.push({time:nowTime(), color:"mustard"});
-    pushDayData();
-    setTimeout(()=>openTimePicker("poo", currentPoos.length-1), 400);
-  });
-
-/* ═══════════════════════════════════════════════════════
-   CLEAR BUTTONS
-═══════════════════════════════════════════════════════ */
-  document.getElementById("clearFeedingBtn").addEventListener("click", ()=>{
-    if(!currentFeedings.length){showToast("Nothing to clear");return;}
-    if(confirm("Clear all feedings for today?")){ currentFeedings=[]; currentFeedingNotes=""; pushDayData(); showToast("Feedings cleared ✅"); }
-  });
-  document.getElementById("clearDiaperBtn").addEventListener("click", ()=>{
-    if(!currentDiapers.length){showToast("Nothing to clear");return;}
-    if(confirm("Clear all diaper changes for today?")){ currentDiapers=[]; currentDiaperNotes=""; pushDayData(); showToast("Diapers cleared ✅"); }
-  });
-  document.getElementById("clearPooBtn").addEventListener("click", ()=>{
-    if(!currentPoos.length){showToast("Nothing to clear");return;}
-    if(confirm("Clear all poo logs for today?")){ currentPoos=[]; currentPooNotes=""; pushDayData(); showToast("Poo logs cleared ✅"); }
-  });
-
-/* ═══════════════════════════════════════════════════════
-   NOTES DEBOUNCE
-═══════════════════════════════════════════════════════ */
-  let notesDebounce;
-  function notesHandler(field) {
-    return e => {
-      if(!isEditor) return;
-      clearTimeout(notesDebounce);
-      if(field==="feeding") currentFeedingNotes = e.target.value;
-      if(field==="diaper")  currentDiaperNotes  = e.target.value;
-      if(field==="poo")     currentPooNotes     = e.target.value;
-      notesDebounce = setTimeout(pushDayData, 700);
-    };
-  }
-  document.getElementById("feedingNotes").addEventListener("input", notesHandler("feeding"));
-  document.getElementById("diaperNotes").addEventListener("input",  notesHandler("diaper"));
-  document.getElementById("pooNotes").addEventListener("input",     notesHandler("poo"));
-
-/* ═══════════════════════════════════════════════════════
-   TABS
-═══════════════════════════════════════════════════════ */
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-      document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-      btn.classList.add("active");
-      activeTab = btn.dataset.tab;
-      document.getElementById("page-"+activeTab).classList.add("active");
-      // Hide date nav on analytics tab
-      document.querySelector(".date-nav").style.display = activeTab==="analytics"?"none":"flex";
-      if(activeTab==="analytics") renderAnalytics();
-    });
-  });
-
-/* ═══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    DATE NAV
-═══════════════════════════════════════════════════════ */
-  function changeDate(d) {
-    if(dbListener){dbListener.off("value");dbListener=null;}
-    currentDate=d; currentFeedings=[]; currentDiapers=[]; currentPoos=[];
-    currentFeedingNotes=currentDiaperNotes=currentPooNotes="";
-    renderAll(); subscribeToDate(currentDate);
+═══════════════════════════════════════════ */
+function changeDate(d){
+  if(dbListener){ dbListener.off("value"); dbListener=null; }
+  state.date=d; state.feedings=[];state.fNotes="";state.diapers=[];state.dNotes="";state.poos=[];state.pNotes="";
+  renderAll(); subscribe(d);
+}
+document.getElementById("prevDay").addEventListener("click",()=>changeDate(offsetDate(state.date,-1)));
+document.getElementById("nextDay").addEventListener("click",()=>{ if(state.date<todayKey()) changeDate(offsetDate(state.date,1)); });
+
+/* ═══════════════════════════════════════════
+   TIME PICKER
+═══════════════════════════════════════════ */
+function buildDrum(id,items,selected,cb){
+  const el=document.getElementById(id);
+  el.innerHTML="";
+  const tg=document.createElement("div"); tg.className="drum-ghost"; el.appendChild(tg);
+  items.forEach(v=>{
+    const di=document.createElement("div");
+    di.className="drum-item"+(v===selected?" sel":"");
+    di.textContent=String(v).padStart(2,"0");
+    di.addEventListener("click",()=>{
+      el.querySelectorAll(".drum-item").forEach(x=>x.classList.remove("sel"));
+      di.classList.add("sel"); cb(v); updateTPPreview();
+    });
+    el.appendChild(di);
+  });
+  const bg=document.createElement("div"); bg.className="drum-ghost"; el.appendChild(bg);
+  setTimeout(()=>{
+    const s=el.querySelector(".sel");
+    if(s) el.scrollTop=s.offsetTop-el.clientHeight/2+s.clientHeight/2;
+  },50);
+  let t;
+  el.addEventListener("scroll",()=>{ clearTimeout(t); t=setTimeout(()=>snapDrum(el,cb),120); });
+}
+
+function snapDrum(el,cb){
+  const items=el.querySelectorAll(".drum-item");
+  const center=el.scrollTop+el.clientHeight/2;
+  let closest=null,dist=Infinity;
+  items.forEach(item=>{ const d=Math.abs(item.offsetTop+item.clientHeight/2-center); if(d<dist){dist=d;closest=item;} });
+  if(closest){
+    el.querySelectorAll(".drum-item").forEach(x=>x.classList.remove("sel"));
+    closest.classList.add("sel");
+    el.scrollTo({top:closest.offsetTop-el.clientHeight/2+closest.clientHeight/2,behavior:"smooth"});
+    cb(parseInt(closest.textContent)); updateTPPreview();
   }
-  document.getElementById("prevDay").addEventListener("click", ()=>changeDate(offsetDate(currentDate,-1)));
-  document.getElementById("nextDay").addEventListener("click", ()=>{ if(currentDate<todayKey()) changeDate(offsetDate(currentDate,1)); });
+}
 
-/* ═══════════════════════════════════════════════════════
-   ANALYTICS WEEK NAV
-═══════════════════════════════════════════════════════ */
-  document.getElementById("prevWeek").addEventListener("click", ()=>{ analyticsWeekOffset--; renderAnalytics(); });
-  document.getElementById("nextWeek").addEventListener("click", ()=>{ analyticsWeekOffset++; renderAnalytics(); });
+function updateTPPreview(){
+  document.getElementById("tpH").textContent=String(state.tp.h).padStart(2,"0");
+  document.getElementById("tpM").textContent=String(state.tp.m).padStart(2,"0");
+  document.getElementById("tpAP").textContent=state.tp.ap;
+}
 
-/* ═══════════════════════════════════════════════════════
+function setAMPM(v){
+  state.tp.ap=v;
+  document.getElementById("btnAM").classList.toggle("sel",v==="AM");
+  document.getElementById("btnPM").classList.toggle("sel",v==="PM");
+  updateTPPreview();
+}
+
+function openTP(section,index){
+  const arr=section==="f"?state.feedings:section==="d"?state.diapers:state.poos;
+  const p=parse24(arr[index]?.time);
+  state.tp={ctx:{section,index},h:p.h,m:p.m,ap:p.ap};
+  buildDrum("drumH",Array.from({length:12},(_,i)=>i+1),state.tp.h,v=>{state.tp.h=v;});
+  buildDrum("drumM",Array.from({length:60},(_,i)=>i),  state.tp.m,v=>{state.tp.m=v;});
+  setAMPM(state.tp.ap); updateTPPreview();
+  document.getElementById("tpOverlay").classList.remove("hidden");
+}
+
+function closeTP(){ document.getElementById("tpOverlay").classList.add("hidden"); state.tp.ctx=null; }
+
+document.getElementById("btnAM").addEventListener("click",()=>setAMPM("AM"));
+document.getElementById("btnPM").addEventListener("click",()=>setAMPM("PM"));
+document.getElementById("tpCancel").addEventListener("click",closeTP);
+document.getElementById("tpOverlay").addEventListener("click",e=>{ if(e.target===document.getElementById("tpOverlay")) closeTP(); });
+document.getElementById("tpOk").addEventListener("click",()=>{
+  if(!state.tp.ctx) return;
+  const t=to24(state.tp.h,state.tp.m,state.tp.ap);
+  const {section,index}=state.tp.ctx;
+  if(section==="f") state.feedings[index].time=t;
+  if(section==="d") state.diapers[index].time=t;
+  if(section==="p") state.poos[index].time=t;
+  pushData(); showToast(`Time set to ${fmt12(t)} ✅`); closeTP();
+});
+
+/* ═══════════════════════════════════════════
+   ANALYTICS
+═══════════════════════════════════════════ */
+function getWeekDates(offset){
+  const today=new Date(), day=today.getDay();
+  const mon=new Date(today);
+  mon.setDate(today.getDate()-(day===0?6:day-1)+offset*7);
+  return Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d.toISOString().slice(0,10); });
+}
+
+async function renderAnalytics(){
+  const container=document.getElementById("analyticsContent");
+  container.innerHTML=`<div style="text-align:center;padding:30px"><div class="spinner" style="margin:0 auto"></div><p style="margin-top:12px;color:var(--subtext);font-size:.88rem">Loading…</p></div>`;
+
+  const days=getWeekDates(state.weekOffset);
+  const fmtS=d=>new Date(d+"T00:00:00").toLocaleDateString(undefined,{day:"numeric",month:"short"});
+  document.getElementById("weekLabel").textContent=`${fmtS(days[0])} – ${fmtS(days[6])}`;
+  document.getElementById("nextWeek").disabled=days[6]>=todayKey();
+
+  const DAY_LABELS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const dayData=await Promise.all(days.map(async d=>{
+    const snap=await db.ref(dbPath(d)).get(); const v=snap.val()||{};
+    return {
+      date:d,
+      feedings:Array.isArray(v.feedings?.rows)?v.feedings.rows:[],
+      diapers: Array.isArray(v.diapers?.rows) ?v.diapers.rows :[],
+      poos:    Array.isArray(v.poos?.rows)     ?v.poos.rows    :[],
+    };
+  }));
+
+  const totalM=dayData.reduce((s,d)=>s+d.feedings.length,0);
+  const totalD=dayData.reduce((s,d)=>s+d.diapers.length,0);
+  const totalP=dayData.reduce((s,d)=>s+d.poos.length,0);
+  const avgM=totalM?(totalM/7).toFixed(1):"—";
+  const avgD=totalD?(totalD/7).toFixed(1):"—";
+  const wetC=dayData.flatMap(d=>d.diapers).filter(r=>r.type==="wet"||r.type==="both").length;
+  const dirtyC=dayData.flatMap(d=>d.diapers).filter(r=>r.type==="poo"||r.type==="both").length;
+  const avgFirst=avgT(dayData.map(d=>d.feedings.map(r=>r.time).filter(Boolean).sort()[0]).filter(Boolean));
+  const avgLast =avgT(dayData.map(d=>{ const t=d.feedings.map(r=>r.time).filter(Boolean).sort(); return t[t.length-1]; }).filter(Boolean));
+
+  const foodCount={};
+  dayData.flatMap(d=>d.feedings).forEach(r=>{ if(!r.food) return; const k=r.food.trim().toLowerCase(); foodCount[k]=(foodCount[k]||0)+1; });
+  const topFoods=Object.entries(foodCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  const pooColorCount={};
+  dayData.flatMap(d=>d.poos).forEach(r=>{ const c=r.color||"mustard"; pooColorCount[c]=(pooColorCount[c]||0)+1; });
+
+  const barMax=Math.max(...dayData.map(d=>Math.max(d.feedings.length,d.diapers.length,d.poos.length)),1);
+
+  container.innerHTML=`
+    <div class="a-grid">
+      <div class="a-card"><div class="a-icon">🍽</div><div class="a-val">${totalM}</div><div class="a-lbl">Total Meals</div></div>
+      <div class="a-card"><div class="a-icon">📈</div><div class="a-val">${avgM}</div><div class="a-lbl">Avg Meals/Day</div></div>
+      <div class="a-card g"><div class="a-icon">👶</div><div class="a-val">${totalD}</div><div class="a-lbl">Total Diapers</div></div>
+      <div class="a-card g"><div class="a-icon">📊</div><div class="a-val">${avgD}</div><div class="a-lbl">Avg Diapers/Day</div></div>
+      <div class="a-card y"><div class="a-icon">💩</div><div class="a-val">${totalP}</div><div class="a-lbl">Total Poos</div></div>
+      <div class="a-card y"><div class="a-icon">💧</div><div class="a-val">${wetC}</div><div class="a-lbl">Wet Diapers</div></div>
+      <div class="a-card full"><div class="a-icon">⏰</div><div class="a-val" style="font-size:1rem">${avgFirst} → ${avgLast}</div><div class="a-lbl">Avg First → Last Feed</div></div>
+    </div>
+
+    <div class="card" style="padding:14px;margin-bottom:14px">
+      <div style="font-size:.85rem;font-weight:800;margin-bottom:12px">📅 Daily Breakdown</div>
+      ${dayData.map((d,i)=>`
+        <div class="chart-row">
+          <div class="chart-lbl">${DAY_LABELS[i]}</div>
+          <div class="chart-bars">
+            <div class="bar-track"><div class="bar-fill m" style="width:${d.feedings.length?Math.max((d.feedings.length/barMax)*100,8):0}%">${d.feedings.length||""}</div></div>
+            <div class="bar-track b"><div class="bar-fill d" style="width:${d.diapers.length?Math.max((d.diapers.length/barMax)*100,8):0}%">${d.diapers.length||""}</div></div>
+            <div class="bar-track y"><div class="bar-fill p" style="width:${d.poos.length?Math.max((d.poos.length/barMax)*100,8):0}%">${d.poos.length||""}</div></div>
+          </div>
+        </div>`).join("")}
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:.68rem;font-weight:700;color:var(--subtext)">
+        <span>🟥 Meals</span><span>🟦 Diapers</span><span>🟨 Poos</span>
+      </div>
+    </div>
+
+    <div class="card" style="padding:14px;margin-bottom:14px">
+      <div style="font-size:.85rem;font-weight:800;margin-bottom:10px">🥣 Top Foods This Week</div>
+      ${topFoods.length?`<div class="food-list">${topFoods.map(([f,c])=>`<div class="fi"><span>${foodEmoji(f)}</span><span style="text-transform:capitalize">${esc(f)}</span><span class="fc">${c}×</span></div>`).join("")}</div>`:`<div class="no-data">No food data yet.</div>`}
+    </div>
+
+    <div class="card" style="padding:14px;margin-bottom:24px">
+      <div style="font-size:.85rem;font-weight:800;margin-bottom:10px">💩 Poo Color Breakdown</div>
+      ${Object.keys(pooColorCount).length?`<div class="food-list">${Object.entries(pooColorCount).sort((a,b)=>b[1]-a[1]).map(([id,c])=>{ const col=getPooColor(id); return `<div class="fi"><span style="width:16px;height:16px;border-radius:50%;background:${col.hex};display:inline-block;border:1px solid #0002;flex-shrink:0"></span><span>${col.label} ${col.normal?"✓":"⚠️"}</span><span class="fc">${c}×</span></div>`; }).join("")}</div>`:`<div class="no-data">No poo data yet.</div>`}
+    </div>`;
+}
+
+function avgT(times){
+  if(!times.length) return "—";
+  const mins=times.map(t=>{ const [h,m]=t.split(":").map(Number); return h*60+m; });
+  const avg=Math.round(mins.reduce((a,b)=>a+b,0)/mins.length);
+  return fmt12(`${String(Math.floor(avg/60)).padStart(2,"0")}:${String(avg%60).padStart(2,"0")}`);
+}
+
+document.getElementById("prevWeek").addEventListener("click",()=>{ state.weekOffset--; renderAnalytics(); });
+document.getElementById("nextWeek").addEventListener("click",()=>{ state.weekOffset++; renderAnalytics(); });
+
+/* ═══════════════════════════════════════════
    PIN MODAL
-═══════════════════════════════════════════════════════ */
-  document.getElementById("roleBadge").addEventListener("click", ()=>{
-    if(isEditor){
-      isEditor=false; sessionStorage.removeItem("bfRole");
-      renderAll(); showToast("Switched to viewer 👁");
-    } else {
-      document.getElementById("pinModal").classList.remove("hidden");
-      document.getElementById("pinInput").value="";
-      document.getElementById("pinError").textContent="";
-      setTimeout(()=>document.getElementById("pinInput").focus(),100);
-    }
-  });
-
-  function confirmPin() {
-    const pin = document.getElementById("pinInput");
-    if(pin.value===EDITOR_PIN){
-      isEditor=true; sessionStorage.setItem("bfRole","editor");
-      document.getElementById("pinModal").classList.add("hidden");
-      renderAll(); showToast("Editor unlocked ✏️");
-    } else {
-      pin.classList.add("error");
-      document.getElementById("pinError").textContent="❌ Incorrect PIN.";
-      pin.value="";
-      setTimeout(()=>pin.classList.remove("error"),400);
-    }
+═══════════════════════════════════════════ */
+document.getElementById("roleBadge").addEventListener("click",()=>{
+  if(state.isEditor){
+    state.isEditor=false; sessionStorage.removeItem("bfRole");
+    renderAll(); showToast("Switched to viewer 👁");
+  } else {
+    document.getElementById("pinModal").classList.remove("hidden");
+    document.getElementById("pinInput").value="";
+    document.getElementById("pinErr").textContent="";
+    setTimeout(()=>document.getElementById("pinInput").focus(),100);
   }
+});
 
-  document.getElementById("pinConfirm").addEventListener("click", confirmPin);
-  document.getElementById("pinCancel").addEventListener("click",  ()=>document.getElementById("pinModal").classList.add("hidden"));
-  document.getElementById("pinInput").addEventListener("keydown", e=>{ if(e.key==="Enter") confirmPin(); });
+function confirmPin(){
+  const pin=document.getElementById("pinInput");
+  if(pin.value===EDITOR_PIN){
+    state.isEditor=true; sessionStorage.setItem("bfRole","editor");
+    document.getElementById("pinModal").classList.add("hidden");
+    renderAll(); showToast("Editor unlocked ✏️");
+  } else {
+    pin.classList.add("err");
+    document.getElementById("pinErr").textContent="❌ Incorrect PIN.";
+    pin.value="";
+    setTimeout(()=>pin.classList.remove("err"),400);
+  }
+}
 
-/* ═══════════════════════════════════════════════════════
+document.getElementById("pinOk").addEventListener("click",confirmPin);
+document.getElementById("pinCancel").addEventListener("click",()=>document.getElementById("pinModal").classList.add("hidden"));
+document.getElementById("pinInput").addEventListener("keydown",e=>{ if(e.key==="Enter") confirmPin(); });
+
+/* ═══════════════════════════════════════════
    TOAST
-═══════════════════════════════════════════════════════ */
-  let toastTimer;
-  function showToast(msg) {
-    const t=document.getElementById("toast");
-    t.textContent=msg; t.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer=setTimeout(()=>t.classList.remove("show"),2400);
-  }
+═══════════════════════════════════════════ */
+let toastT;
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2400);
+}
 
-/* ═══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    BOOT
-═══════════════════════════════════════════════════════ */
-  db.ref(".info/connected").on("value", snap=>{
-    if(snap.val()===true) document.getElementById("connectingOverlay").style.display="none";
-  });
-  subscribeToDate(currentDate);
+═══════════════════════════════════════════ */
+db.ref(".info/connected").on("value",snap=>{
+  if(snap.val()===true) document.getElementById("connectingOverlay").style.display="none";
+});
+subscribe(state.date);
 </script>
 </body>
 </html>
